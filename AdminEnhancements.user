@@ -1,16 +1,19 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.2
+// @version      0.3
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
 // @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
 // @grant        GM_addStyle
+// @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.3
+Added update URL
 v0.2
 Added Low Battery Warning (<15%)
 Changed Update Method to look for Ajax changes instead of Pulse Method
