@@ -1,0 +1,70 @@
+// ==UserScript==
+// @name         Admin Enhancements
+// @namespace    admin
+// @version      0.2
+// @description  Chris's Admin Enhancements
+// @author       Chris Pittelko
+// @match        https://admin.ring.com/*
+// @require      http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
+// @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
+// @grant        GM_addStyle
+// ==/UserScript==
+
+/* Change Log
+v0.2
+Added Low Battery Warning (<15%)
+Changed Update Method to look for Ajax changes instead of Pulse Method
+*/
+
+// Color Guide:
+// Red: MSP430 Error
+// Orange: Low Battery (<15%)
+// Blue: OTA/Setup
+// Yellow: RSSI < -70
+
+function highlightReports () {
+    var rssiData = $('.key.ng-binding:contains("rssi")').parent(),
+        rssiReport,
+        rssiValue;
+    for (var key in rssiData) {
+        if (rssiData.hasOwnProperty(key)) {
+            rssiReport = rssiData.eq(key);
+            rssiValue = rssiReport.find(':nth-child(2)').html();
+            if (rssiValue <= -70) {
+                rssiReport.parent().parent().parent().css("background-color", "#fcf8e3");
+            }
+        }
+    }
+    
+    var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
+        batteryReport,
+        batteryValue;
+    for (var key in batteryData) {
+        if (batteryData.hasOwnProperty(key)) {
+            batteryReport = batteryData.eq(key);
+            batteryValue = batteryReport.find(':nth-child(2)').html();
+            if (batteryValue <= 15) {
+                batteryReport.parent().parent().parent().css("background-color", "#ffc370");
+            }
+        }
+    }
+    
+    $('.context.ng-binding:contains("After OTA")').parent().css("background-color", "#d9edf7");
+    $('.context.ng-binding:contains("After Setup")').parent().css("background-color", "#d9edf7");
+    
+    var mspData = $('.key.ng-binding:contains("msp430_error")').parent(),
+        mspReport,
+        mspValue;
+    for (var key in mspData) {
+        if (mspData.hasOwnProperty(key)) {
+            mspReport = mspData.eq(key);
+            mspValue = mspReport.find(':nth-child(2)').html();
+            if (mspValue == 1) {
+                mspReport.parent().parent().parent().css("background-color", "#f2dede");
+            }
+        }
+    }
+    
+}
+
+waitForKeyElements ("tr.ng-scope", highlightReports);
