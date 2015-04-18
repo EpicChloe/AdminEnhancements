@@ -66,7 +66,6 @@ function highlightReports () {
         if (mspData.hasOwnProperty(key)) {
             mspReport = mspData.eq(key);
             mspValue = mspReport.find(':nth-child(2)').html();
-            console.log(mspValue);
             if (mspValue != 0 || mspValue === "") {
                 mspReport.parent().parent().parent().css("background-color", "#f2dede");
             }
