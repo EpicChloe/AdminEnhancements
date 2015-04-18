@@ -12,6 +12,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.3.2
+Fixed MSP Error not highlighting when blank
 v0.3.1
 Fixed MSP Errors not highlighting
 v0.3
@@ -64,7 +66,8 @@ function highlightReports () {
         if (mspData.hasOwnProperty(key)) {
             mspReport = mspData.eq(key);
             mspValue = mspReport.find(':nth-child(2)').html();
-            if (mspValue >= 1) {
+            console.log(mspValue);
+            if (mspValue != 0 || mspValue === "") {
                 mspReport.parent().parent().parent().css("background-color", "#f2dede");
             }
         }
