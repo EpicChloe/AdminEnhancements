@@ -40,14 +40,21 @@ function highlightReports (jNode) {
     if (rssiValue <= -70 && rssiValue !== null) {
         jNode.css("background-color", "#fcf8e3");
     }
+    
     if (batteryValue <= 15 && batteryValue !== null) {
         jNode.css("background-color", "#ffc370");
     }
+    
     jNode.find('.context.ng-binding:contains("After OTA")').parent().css("background-color", "#d9edf7");
+    
     jNode.find('.context.ng-binding:contains("After Setup")').parent().css("background-color", "#d9edf7");
+    
     if (mspValue != 0 && mspValue !== null) {
         jNode.css("background-color", "#f2dede");
     }
+    
+    jNode.find('.status_date.ng-binding').append('!! Placeholder !!');
+
 }
 
 waitForKeyElements ("tr.ng-scope", highlightReports);
