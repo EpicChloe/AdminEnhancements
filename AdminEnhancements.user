@@ -55,8 +55,23 @@ function highlightReports (jNode) {
         jNode.css("background-color", "#f2dede");
     }
     
-    jNode.find('.status_date.ng-binding').append('<a class="btn btn-xs btn-primary">Summary</a>');
+    jNode.find('.status_date.ng-binding').append('<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>Summary Tooltip!</span></a>');
 
-}
+};
 
 waitForKeyElements ("tr.ng-scope", highlightReports);
+
+GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
+GM_addStyle('a.APESummaryButton span {position: absolute; width:140px; color: #FFFFFF; background: #000000; height: 30px; line-height: 30px; text-align: center; visibility: hidden; border-radius: 6px; !important}');
+//GM_addStyle('a.APESummaryButton span:after{content:'';position:absolute;top:50%;right:100%;margin-top:-8px;width:0;height:0;border-right:8px solid #000;border-top:8px solid transparent;border-bottom:8px solid transparent !important}');
+GM_addStyle('a:hover.APESummaryButton span {visibility: visible; opacity: 0.8; left: 100%; top: 50%; margin-top: -15px; margin-left: 15px; z-index: 999; !important}');
+
+console.log($('.panel-heading').find(':contains("Reports Summary")').html());
+
+$( document ).ready(function() {
+    setTimeout(function () {
+        console.log($('.panel-heading').find(':contains("Reports Summary")').append('<a class="btn pull-right btn-primary text-center vcenter">Generate Battery Graph</a>'));
+    }, 2000);
+});
+
+GM_addStyle('.panel-heading {height: 38px; padding: 0px; !important}');
