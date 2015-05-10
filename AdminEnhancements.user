@@ -1,17 +1,21 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.4.1
+// @version      0.4.5
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
 // @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
+// @require      http://code.highcharts.com/highcharts.js
 // @grant        GM_addStyle
 // @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.4.5
+Summary button now works.
+Fixed some css issues.
 v0.4.1
 Changed placeholder to button. Not functional at the moment.
 v0.4
@@ -37,7 +41,15 @@ function highlightReports (jNode) {
 
     var rssiValue = jNode.find('.key.ng-binding:contains("rssi")').parent().find(':nth-child(2)').html(),
         batteryValue = jNode.find('.key.ng-binding:contains("battery_percentage")').parent().find(':nth-child(2)').html(),
-        mspValue = jNode.find('.key.ng-binding:contains("msp430_error")').parent().find(':nth-child(2)').html(); 
+        mspValue = jNode.find('.key.ng-binding:contains("msp430_error")').parent().find(':nth-child(2)').html(),
+        IRCutFilterIR = jNode.find('.key.ng-binding:contains("light_ir")').parent().find(':nth-child(2)').html(),
+        IRCutFilterVis = jNode.find('.key.ng-binding:contains("light_vis")').parent().find(':nth-child(2)').html(),
+        IRCutFilterOn,
+        startStream = jNode.find('.key.ng-binding:contains("start_stream_profile")').parent().find(':nth-child(2)').html(),
+        endStream = jNode.find('.key.ng-binding:contains("end_stream_profile")').parent().find(':nth-child(2)').html(),
+        streamUp = jNode.find('.key.ng-binding:contains("num_stream_upgrades")').parent().find(':nth-child(2)').html(),
+        streamDown = jNode.find('.key.ng-binding:contains("num_stream_downgrades")').parent().find(':nth-child(2)').html(),
+        buttonTooltip;
     
     if (rssiValue <= -70 && rssiValue !== null) {
         jNode.css("background-color", "#fcf8e3");
@@ -55,23 +67,39 @@ function highlightReports (jNode) {
         jNode.css("background-color", "#f2dede");
     }
     
-    jNode.find('.status_date.ng-binding').append('<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>Summary Tooltip!</span></a>');
+    if (IRCutFilterIR + IRCutFilterVis <= 12) {
+        IRCutFilterOn = "On";
+    } else {
+        IRCutFilterOn = "Off";
+    }
+    
+    buttonTooltip = [
+        '<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>',
+        '<table class="table table-bordered APETable">',
+        '<tr><td>RSSI:</td><td>'+rssiValue+'</td><td>Battery:</td><td>'+batteryValue+'</td></tr>',
+        '<tr><td>MSP Error:</td><td>'+mspValue+'</td><td>IR Cut Filter:</td><td>'+IRCutFilterOn+'</td></tr>',
+        '<tr><td>Stream Start:</td><td>'+startStream+'</td><td>Stream End:</td><td>'+endStream+'</td></tr>',
+        '<tr><td>Stream Upgrades:</td><td>'+streamUp+'</td><td>Stream Downgrades:</td><td>'+streamDown+'</td></tr>',
+        '</table>',
+        '</span></a>'
+    ];
+    
+    jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
 
 };
 
 waitForKeyElements ("tr.ng-scope", highlightReports);
 
 GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
-GM_addStyle('a.APESummaryButton span {position: absolute; width:140px; color: #FFFFFF; background: #000000; height: 30px; line-height: 30px; text-align: center; visibility: hidden; border-radius: 6px; !important}');
+GM_addStyle('a.APESummaryButton span {position: absolute; width:140px; color:black; height: auto; line-height: 30px; text-align: center; visibility: hidden; border-radius: 6px; !important}');
 //GM_addStyle('a.APESummaryButton span:after{content:'';position:absolute;top:50%;right:100%;margin-top:-8px;width:0;height:0;border-right:8px solid #000;border-top:8px solid transparent;border-bottom:8px solid transparent !important}');
-GM_addStyle('a:hover.APESummaryButton span {visibility: visible; opacity: 0.8; left: 100%; top: 50%; margin-top: -15px; margin-left: 15px; z-index: 999; !important}');
+GM_addStyle('a:hover.APESummaryButton span {visibility: visible; opacity: 1; left: 100%; top: 50%; margin-top: -15px; margin-left: 15px; z-index: 999; !important}');
+GM_addStyle('.APETable {box-shadow: 10px 10px 20px 2px rgba(0,0,0,0.5); border: 2px solid #000; !important}');
 
 console.log($('.panel-heading').find(':contains("Reports Summary")').html());
 
 $( document ).ready(function() {
     setTimeout(function () {
-        console.log($('.panel-heading').find(':contains("Reports Summary")').append('<a class="btn pull-right btn-primary text-center vcenter">Generate Battery Graph</a>'));
-    }, 2000);
+        console.log($('.reports.cf').prepend('<a class="btn btn-primary">Generate Battery Graph</a>'));
+    }, 5000);
 });
-
-GM_addStyle('.panel-heading {height: 38px; padding: 0px; !important}');
