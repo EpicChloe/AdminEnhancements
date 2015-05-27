@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.6.1
+// @version      0.6.5
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -13,6 +13,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.6.5
+Added RSSI Variance Graph
 v0.6.1
 Fixed issue with double buttons appearing.
 v0.6
@@ -162,6 +164,93 @@ function buildBatteryReport() {
     });
 };
 
+// Builds RSSI Chart using High Charts Library
+function buildRSSIReport() {
+    $('#APEcontainer').highcharts({
+        chart: {
+            type: 'line'
+        },
+        title: {
+            text: 'RSSI Report'
+        },
+        subtitle: {
+            text: ''
+        },
+        xAxis: {
+            title: {
+                text: 'Reports (Oldest -> Newest)'
+            }
+        },
+        yAxis: {
+            title: {
+                text: 'RSSI Reading'
+            },
+            min: 0,
+            max: 100
+        },
+        plotOptions: {
+            line: {
+                dataLabels: {
+                    enabled: true
+                },
+                enableMouseTracking: false
+            }
+        },
+        series: [{
+            type: 'line',
+            name: 'Average RSSI',
+            data: (function () {
+                var rssiData = $('.key.ng-binding:contains("rssi")').parent(),
+                    rssiReport,
+                    rssiValue,
+                    data = [];
+                for (var key in rssiData) {
+                    if (rssiData.hasOwnProperty(key)) {
+                        rssiReport = rssiData.eq(key);
+                        rssiValue = rssiReport.find(':nth-child(2)').html();
+                        if (rssiValue !== null) {
+                            data.unshift(parseInt(Math.abs(rssiValue)));
+                        }
+                    }
+                }
+                var average = data.map(function(x,i,arr){return x/arr.length}).reduce(function(a,b){return a + b});
+                return [[0, Math.round(average)], [(data.length - 1), Math.round(average)]];
+            }()),
+            marker: {
+                enabled: false
+            },
+            states: {
+                hover: {
+                    enabled: false,
+                    lineWidth: 0
+                }
+            },
+            enableMouseTracking: false,
+            color: 'orange'
+                 
+                 }, {
+                 
+            name: 'Reported RSSI',
+            data: (function () {
+                var rssiData = $('.key.ng-binding:contains("rssi")').parent(),
+                    rssiReport,
+                    rssiValue,
+                    data = [];
+                for (var key in rssiData) {
+                    if (rssiData.hasOwnProperty(key)) {
+                        rssiReport = rssiData.eq(key);
+                        rssiValue = rssiReport.find(':nth-child(2)').html();
+                        if (rssiValue !== null) {
+                            data.unshift(parseInt(Math.abs(rssiValue)));
+                        }
+                    }
+                }
+                return data;
+            }())
+        }]
+    });
+};
+
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
@@ -195,9 +284,10 @@ function APERender() {
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
-            $('.reports.cf').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button>');
+            $('.reports.cf').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button><button type="button" class="btn btn-primary" id="RSSIReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate RSSI Report</button>');
             $('#BatteryReportButton').parent().prepend('<div id="APEcontainer"></div>');
             $('#BatteryReportButton').on( "click", buildBatteryReport );
+            $('#RSSIReportButton').on( "click", buildRSSIReport );
             pingReports = 0;
         }
         if (pingCheck > 10) {
