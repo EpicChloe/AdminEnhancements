@@ -1,20 +1,23 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.6.5
+// @version      0.6.6
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
 // @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
 // @require      http://code.highcharts.com/highcharts.js
+// @require      http://code.highcharts.com/modules/exporting.js
 // @grant        GM_addStyle
 // @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.6.6
+Added ability to download graphs.
 v0.6.5
-Added RSSI Variance Graph
+Added RSSI Variance Graph.
 v0.6.1
 Fixed issue with double buttons appearing.
 v0.6
