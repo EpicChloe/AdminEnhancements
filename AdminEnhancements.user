@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.6
+// @version      0.6.1
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -13,6 +13,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.6.1
+Fixed issue with double buttons appearing.
 v0.6
 Buttons and Spree Link should work more reliably.
 Added fixes for AJAX calls that updates the page.
@@ -191,7 +193,7 @@ function APERender() {
             $('[data-title="\'Spree link\'"]').html(link);
             pingSpree = 0;
         }
-        if ($('#reports_resume').length && pingReports) {
+        if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
             $('.reports.cf').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button>');
             $('#BatteryReportButton').parent().prepend('<div id="APEcontainer"></div>');
