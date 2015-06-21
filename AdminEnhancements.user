@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.6.9
+// @version      0.7
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,6 +14,9 @@
 // ==/UserScript==
 
 /* Change Log
+v0.7
+Added symbols to color swatches for colorblind assist
+Added Stream Report to show Average End Stream, End Stream, and Start Stream.
 v0.6.9
 Added i2c_error reading and parsing
 v0.6.6
@@ -59,6 +62,7 @@ GM_addStyle('a.APESummaryButton span {position: absolute; width: auto; color:bla
 GM_addStyle('a:hover.APESummaryButton span {visibility: visible; opacity: 1; left: 100%; top: 50%; margin-top: -15px; margin-left: 15px; z-index: 999; !important}');
 GM_addStyle('.APETable {box-shadow: 10px 10px 20px 2px rgba(0,0,0,0.5); border: 2px solid #000; background-color: #FFF; !important}');
 GM_addStyle('#APEcontainer {min-width: 310px; margin: 0 auto}');
+GM_addStyle('.APESymbolHelper {padding-left: 10px');
 
 // Updates Report Listing when updated through AJAX calls.
 function highlightReports (jNode) {
@@ -156,6 +160,26 @@ function converti2cValueToString(value) {
     }  
         
 };
+
+// Converts color swatches to symbols for color blind help
+function colorBlindHelper () {
+    var eventSuccessColorSwatch = $('span.ng-scope.yipee'),
+        eventFailColorSwatch = $('span.ng-scope.ouch'),
+        setupSucessColorSwatch = $('span.yipee'),
+        setupFailColorSwatch = $('span.ouch');
+    
+    //eventSuccessColorSwatch.html('<span><i class="fa fa-check"></i></span>');
+    eventSuccessColorSwatch.parent().find(':nth-child(2)').addClass('pull-right');
+    
+    //eventFailColorSwatch.html('<span><i class="fa fa-times"></i></span>');
+    eventFailColorSwatch.parent().find(':nth-child(2)').addClass('pull-right');
+    
+    setupSucessColorSwatch.html('<span><i class="fa fa-check APESymbolHelper"></i></span>');
+    setupSucessColorSwatch.parent().find(':nth-child(2)').css('padding-left', '20px');
+    
+    setupFailColorSwatch.html('<span><i class="fa fa-times APESymbolHelper"></i></span>');
+    setupFailColorSwatch.parent().find(':nth-child(2)').css('padding-left', '20px');
+}
 
 // Adds Report Listings to AJAX watch list
 waitForKeyElements ("tr.ng-scope", highlightReports);
@@ -301,6 +325,113 @@ function buildRSSIReport() {
     });
 };
 
+// Builds Stream Report using High Charts Library
+function buildStreamReport () {
+    $('#APEcontainer').highcharts({
+        chart: {
+            type: 'line'
+        },
+        title: {
+            text: 'Stream Profile Report'
+        },
+        subtitle: {
+            text: ''
+        },
+        xAxis: {
+            title: {
+                text: 'Reports (Oldest -> Newest)'
+            }
+        },
+        yAxis: {
+            title: {
+                text: 'Stream Profile'
+            },
+            min: 0,
+            max: 5
+        },
+        plotOptions: {
+            line: {
+                dataLabels: {
+                    enabled: true
+                },
+                enableMouseTracking: false
+            }
+        },
+        series: [{
+            type: 'line',
+            name: 'Average End Stream',
+            data: (function () {
+                var endStreamData = $('.key.ng-binding:contains("end_stream_profile")').parent(),
+                    endStreamReport,
+                    endStreamValue,
+                    data = [];
+                for (var key in endStreamData) {
+                    if (endStreamData.hasOwnProperty(key)) {
+                        endStreamReport = endStreamData.eq(key);
+                        endStreamValue = endStreamReport.find(':nth-child(2)').html();
+                        if (endStreamValue !== null) {
+                            data.unshift(parseInt(Math.abs(endStreamValue)));
+                        }
+                    }
+                }
+                var average = data.map(function(x,i,arr){return x/arr.length}).reduce(function(a,b){return a + b});
+                return [[0, Math.round(average)], [(data.length - 1), Math.round(average)]];
+            }()),
+            marker: {
+                enabled: false
+            },
+            states: {
+                hover: {
+                    enabled: false,
+                    lineWidth: 0
+                }
+            },
+            enableMouseTracking: false,
+            color: 'orange'
+                 
+                 }, {
+                 
+            name: 'End Stream Profile',
+            data: (function () {
+                var endStreamData = $('.key.ng-binding:contains("end_stream_profile")').parent(),
+                    endStreamReport,
+                    endStreamValue,
+                    data = [];
+                for (var key in endStreamData) {
+                    if (endStreamData.hasOwnProperty(key)) {
+                        endStreamReport = endStreamData.eq(key);
+                        endStreamValue = endStreamReport.find(':nth-child(2)').html();
+                        if (endStreamValue !== null) {
+                            data.unshift(parseInt(Math.abs(endStreamValue)));
+                        }
+                    }
+                }
+                return data;
+            }())
+			
+				}, {
+				
+			name: 'Start Stream Profile',
+            data: (function () {
+                var startStreamData = $('.key.ng-binding:contains("start_stream_profile")').parent(),
+                    startStreamReport,
+                    startStreamValue,
+                    data = [];
+                for (var key in startStreamData) {
+                    if (startStreamData.hasOwnProperty(key)) {
+                        startStreamReport = startStreamData.eq(key);
+                        startStreamValue = startStreamReport.find(':nth-child(2)').html();
+                        if (startStreamValue !== null) {
+                            data.unshift(parseInt(Math.abs(startStreamValue)));
+                        }
+                    }
+                }
+                return data;
+            }())
+        }]
+    });
+};
+
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
@@ -334,10 +465,12 @@ function APERender() {
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
-            $('.reports.cf').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button><button type="button" class="btn btn-primary" id="RSSIReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate RSSI Report</button>');
+            $('.reports.cf').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button><button type="button" class="btn btn-primary" id="RSSIReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate RSSI Report</button><button type="button" class="btn btn-primary" id="StreamReportButton" data-toggle="modal" data-target="#APEStreamReport">Generate Stream Report</button>');
             $('#BatteryReportButton').parent().prepend('<div id="APEcontainer"></div>');
             $('#BatteryReportButton').on( "click", buildBatteryReport );
             $('#RSSIReportButton').on( "click", buildRSSIReport );
+            $('#StreamReportButton').on( 'click', buildStreamReport );
+            colorBlindHelper();
             pingReports = 0;
         }
         if (pingCheck > 10) {
