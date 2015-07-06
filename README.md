@@ -3,6 +3,16 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.7.1
+
+Fixed display of Report buttons
+
+v0.7
+
+Added symbols to color swatches for colorblind assist
+
+Added Stream Report to show Average End Stream, End Stream, and Start Stream.
+
 v0.6.9
 
 Added i2c_error reading and parsing
