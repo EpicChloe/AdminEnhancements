@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.7.1
+// @version      0.7.5
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,6 +14,11 @@
 // ==/UserScript==
 
 /* Change Log
+v0.7.5
+Removed fix for Spree Link. Hyperlink is now generated correctly
+Removed null value displays in APE Summary tooltips
+Disabled color coding for reports as it should now be default
+Added button to toggle between the default and APE Summary Buttons (APE will be default ON)
 v0.7.1
 Fixed display of Report buttons
 v0.7
@@ -54,6 +59,9 @@ function highlightReports (jNode) {
         streamDown = jNode.find('.key.ng-binding:contains("num_stream_downgrades")').parent().find(':nth-child(2)').html(),
         buttonTooltip;
     
+    jNode.find('.btn').addClass('hidden defaultSummaryButton');
+    
+    /*
     if (rssiValue <= -70 && rssiValue !== null) {
         jNode.css("background-color", "#fcf8e3");
     }
@@ -69,6 +77,7 @@ function highlightReports (jNode) {
     if (mspValue != 0 && mspValue !== null) {
         jNode.css("background-color", "#f2dede");
     }
+    */
     
     if (IRCutFilterIR + IRCutFilterVis <= 12) {
         IRCutFilterOn = "On";
@@ -79,11 +88,11 @@ function highlightReports (jNode) {
     buttonTooltip = [
         '<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>',
         '<table class="table table-bordered APETable">',
-        '<tr><td>RSSI:</td><td>'+rssiValue+'</td><td>Battery:</td><td>'+batteryValue+'</td></tr>',
-        '<tr><td>MSP Error:</td><td>'+mspValue+'</td><td>IR Cut Filter:</td><td>'+IRCutFilterOn+'</td></tr>',
-        '<tr><td>Stream Start:</td><td>'+startStream+'</td><td>Stream End:</td><td>'+endStream+'</td></tr>',
-        '<tr><td>Stream Upgrades:</td><td>'+streamUp+'</td><td>Stream Downgrades:</td><td>'+streamDown+'</td></tr>',
-        '<tr><td>i2c Error:</td><td>'+i2cValue+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
+        '<tr><td>RSSI:</td><td>'+nullConvert(rssiValue)+'</td><td>Battery:</td><td>'+nullConvert(batteryValue)+'</td></tr>',
+        '<tr><td>MSP Error:</td><td>'+nullConvert(mspValue)+'</td><td>IR Cut Filter:</td><td>'+nullConvert(IRCutFilterOn)+'</td></tr>',
+        '<tr><td>Stream Start:</td><td>'+nullConvert(startStream)+'</td><td>Stream End:</td><td>'+nullConvert(endStream)+'</td></tr>',
+        '<tr><td>Stream Upgrades:</td><td>'+nullConvert(streamUp)+'</td><td>Stream Downgrades:</td><td>'+nullConvert(streamDown)+'</td></tr>',
+        '<tr><td>i2c Error:</td><td>'+nullConvert(i2cValue)+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
         '</table>',
         '</span></a>'
     ];
@@ -97,6 +106,11 @@ function highlightReports (jNode) {
     jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
 
 };
+
+// Converts null values to '---' for display
+function nullConvert(value) {
+    return (value == null) ? '---' : value;
+}
 
 // Converts 1c2_error value to a String
 function converti2cValueToString(value) {
@@ -153,6 +167,11 @@ function colorBlindHelper () {
     
     setupFailColorSwatch.html('<span><i class="fa fa-times APESymbolHelper"></i></span>');
     setupFailColorSwatch.parent().find(':nth-child(2)').css('padding-left', '20px');
+}
+
+function toggleSummaryButtons() {
+    $('.defaultSummaryButton').toggleClass('hidden');
+    $('.APESummaryButton').toggleClass('hidden');
 }
 
 // Adds Report Listings to AJAX watch list
@@ -430,11 +449,12 @@ function APERender() {
         console.log('Ping!');
         pingCheck ++;
         if ($('[data-title="\'Spree link\'"]').length && pingSpree) {
-            console.log("Found Spree Link! Correcting Link!");
+            // Bug with link fixed in default Admin Panel
+            /*console.log("Found Spree Link! Correcting Link!");
             var link = $('[data-title="\'Spree link\'"]').html();
             link = link.trim().replace('https://', '');
             console.log(link);
-            $('[data-title="\'Spree link\'"]').html(link);
+            $('[data-title="\'Spree link\'"]').html(link);*/
             pingSpree = 0;
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
@@ -444,7 +464,11 @@ function APERender() {
             $('#BatteryReportButton').on( "click", buildBatteryReport );
             $('#RSSIReportButton').on( "click", buildRSSIReport );
             $('#StreamReportButton').on( 'click', buildStreamReport );
+            // Add report button toggle
+            $('#reports_resume .panel-title').append('<button class="btn btn-xs btn-primary pull-right" id="APESummaryToggle">Toggle Summary Buttons</button>');
+            $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
             colorBlindHelper();
+            //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
             pingReports = 0;
         }
         if (pingCheck > 10) {

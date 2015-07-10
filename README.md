@@ -3,6 +3,16 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.7.5
+
+Removed fix for Spree Link. Hyperlink is now generated correctly
+
+Removed null value displays in APE Summary tooltips
+
+Disabled color coding for reports as it should now be default
+
+Added button to toggle between the default and APE Summary Buttons (APE will be default ON)
+
 v0.7.1
 
 Fixed display of Report buttons
