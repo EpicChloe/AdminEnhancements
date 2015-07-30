@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.7.7
+// @version      0.8.0
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,22 +14,15 @@
 // ==/UserScript==
 
 /* Change Log
-v0.7.7
-Global Disable APE
-v0.7.5
-Removed fix for Spree Link. Hyperlink is now generated correctly
-Removed null value displays in APE Summary tooltips
-Disabled color coding for reports as it should now be default
-Added button to toggle between the default and APE Summary Buttons (APE will be default ON)
-v0.7.1
-Fixed display of Report buttons
-v0.7
-Added symbols to color swatches for colorblind assist
-Added Stream Report to show Average End Stream, End Stream, and Start Stream.
+v0.8.0 - Chris to the rescue again edition
+Removed default report buttons
+Added default report buttons to Toggle button
+Corrected Symbols under events to be correct - Unable to correct Setup History
+Added APE Button to navbar
 
 For full change log, please see: https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/README.md
 */
-/*
+
 // Color Guide:
 // Red: MSP430 Error
 // Orange: Low Battery (<15%)
@@ -44,6 +37,8 @@ GM_addStyle('a:hover.APESummaryButton span {visibility: visible; opacity: 1; lef
 GM_addStyle('.APETable {box-shadow: 10px 10px 20px 2px rgba(0,0,0,0.5); border: 2px solid #000; background-color: #FFF; !important}');
 GM_addStyle('#APEcontainer {min-width: 310px; margin: 0 auto}');
 GM_addStyle('.APESymbolHelper {padding-left: 10px');
+GM_addStyle('.page-header {text-align: center}');
+GM_addStyle('.APEModal {position: fixed; top: 8vh; left: 30vw; min-width: 40vw; z-index: 9999; background: #FFF; border-radius: 6px; border: solid 1px black; !important}');
 
 // Updates Report Listing when updated through AJAX calls.
 function highlightReports (jNode) {
@@ -88,7 +83,7 @@ function highlightReports (jNode) {
     }
         
     buttonTooltip = [
-        '<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>',
+        '&nbsp;<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>',
         '<table class="table table-bordered APETable">',
         '<tr><td>RSSI:</td><td>'+nullConvert(rssiValue)+'</td><td>Battery:</td><td>'+nullConvert(batteryValue)+'</td></tr>',
         '<tr><td>MSP Error:</td><td>'+nullConvert(mspValue)+'</td><td>IR Cut Filter:</td><td>'+nullConvert(IRCutFilterOn)+'</td></tr>',
@@ -106,6 +101,8 @@ function highlightReports (jNode) {
     }
     
     jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
+    
+    $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check text-success');
 
 };
 
@@ -174,6 +171,10 @@ function colorBlindHelper () {
 function toggleSummaryButtons() {
     $('.defaultSummaryButton').toggleClass('hidden');
     $('.APESummaryButton').toggleClass('hidden');
+    $('.defaultReportButtons').toggleClass('hidden');
+    $('#BatteryReportButton').toggleClass('hidden');
+    $('#RSSIReportButton').toggleClass('hidden');
+    $('#StreamReportButton').toggleClass('hidden');
 }
 
 // Adds Report Listings to AJAX watch list
@@ -446,7 +447,8 @@ setInterval(function() {
 function APERender() {
     var pingCheck = 0,
         pingSpree = 1,
-        pingReports = 1;
+        pingReports = 1,
+        APEModal = [];
     var checkExist = setInterval(function() {
         console.log('Ping!');
         pingCheck ++;
@@ -461,21 +463,50 @@ function APERender() {
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
-            $('#reports_resume').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button><button type="button" class="btn btn-primary" id="RSSIReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate RSSI Report</button><button type="button" class="btn btn-primary" id="StreamReportButton" data-toggle="modal" data-target="#APEStreamReport">Generate Stream Report</button>');
+            $('#reports_resume').prepend('<button type="button" class="btn btn-primary" id="BatteryReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate Battery Report</button>&nbsp;<button type="button" class="btn btn-primary" id="RSSIReportButton" data-toggle="modal" data-target="#APEBatteryReport">Generate RSSI Report</button>&nbsp;<button type="button" class="btn btn-primary" id="StreamReportButton" data-toggle="modal" data-target="#APEStreamReport">Generate Stream Report</button>');
             $('#BatteryReportButton').parent().prepend('<div id="APEcontainer"></div>');
             $('#BatteryReportButton').on( "click", buildBatteryReport );
             $('#RSSIReportButton').on( "click", buildRSSIReport );
             $('#StreamReportButton').on( 'click', buildStreamReport );
             // Add report button toggle
-            $('#reports_resume .panel-title').append('<button class="btn btn-xs btn-primary pull-right" id="APESummaryToggle">Toggle Summary Buttons</button>');
+            $('#reports_resume .panel-title').append('<button class="btn btn-xs btn-primary pull-right" id="APESummaryToggle">Toggle Buttons</button>');
             $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
-            colorBlindHelper();
+            // Remove buttons for broken reports
+            $('#reports_resume').find("p:first").addClass('hidden defaultReportButtons');
+            // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
+            $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
             pingReports = 0;
+            $('.nav').append('<li class="nav-parent"><button type="button" class="btn btn-primary navbar-btn" id="APEStatus"><i class="fa fa-cogs"></i> APE Enabled</button></li>');
+            $('#APEStatus').on('click', function() {
+                $('#APEInformationModal').toggleClass('hidden');
+            });
+            APEModal = [
+                '<div class="APEModal hidden" id="APEInformationModal">',
+                '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
+                '<dl class="dl-horizontal">',
+                '<dt>Version 0.8.0</dt>',
+                '<dd>',
+                '<ul>',
+                '<li>Removed default report buttons</li>',
+                '<li>Added default report buttons to Toggle button</li>',
+                '<li>Corrected Symbols under events to be correct - Unable to correct Setup History</li>',
+                '<li>Added APE Button to navbar</li>',
+                '</ul>',
+                '</dd>',
+                '<dt>By</dt>',
+                '<dd>Chris Pittelko - chris@ring.com</dd>',
+                '<dt>Link</dt>',
+                '<dd>https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user</dd>',
+                '</dl>',
+                '</div>'
+            ];
+            $('.mainpanel').append(APEModal.join(''));
+            $('#APENav').addClass('active');
         }
         if (pingCheck > 10) {
             clearInterval(checkExist);
         }
     }, 1000);
 }
-*/
+
