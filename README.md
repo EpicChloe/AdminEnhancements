@@ -3,6 +3,20 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.8.0 - Chris to the rescue again edition
+
+Removed default report buttons
+
+Added default report buttons to Toggle button
+
+Corrected Symbols under events to be correct - Unable to correct Setup History
+
+Added APE Button to navbar
+
+v0.7.7
+
+Global Disable APE
+
 v0.7.5
 
 Removed fix for Spree Link. Hyperlink is now generated correctly
