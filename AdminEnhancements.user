@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.8.0
+// @version      0.8.1
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,6 +14,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.8.1
+Fixed double APE Button
 v0.8.0 - Chris to the rescue again edition
 Removed default report buttons
 Added default report buttons to Toggle button
@@ -431,6 +433,33 @@ function buildStreamReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
+    $('.nav').append('<li class="nav-parent"><button type="button" class="btn btn-primary navbar-btn" id="APEStatus"><i class="fa fa-cogs"></i> APE Enabled</button></li>');
+                $('#APEStatus').on('click', function() {
+                    $('#APEInformationModal').toggleClass('hidden');
+                });
+                APEDetailsButton = 0;
+                APEModal = [
+                '<div class="APEModal hidden" id="APEInformationModal">',
+                '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
+                '<dl class="dl-horizontal">',
+                '<dt>Version 0.8.0</dt>',
+                '<dd>',
+                '<ul>',
+                '<li>Removed default report buttons</li>',
+                '<li>Added default report buttons to Toggle button</li>',
+                '<li>Corrected Symbols under events to be correct - Unable to correct Setup History</li>',
+                '<li>Added APE Button to navbar</li>',
+                '</ul>',
+                '</dd>',
+                '<dt>By</dt>',
+                '<dd>Chris Pittelko - chris@ring.com</dd>',
+                '<dt>Link</dt>',
+                '<dd>https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user</dd>',
+                '</dl>',
+                '</div>'
+                ];
+                $('.mainpanel').append(APEModal.join(''));
+                $('#APENav').addClass('active');
 });
 
 // Checks if URL changes and if APE Renderer needs to be enabled again
@@ -477,32 +506,7 @@ function APERender() {
             $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
             pingReports = 0;
-            $('.nav').append('<li class="nav-parent"><button type="button" class="btn btn-primary navbar-btn" id="APEStatus"><i class="fa fa-cogs"></i> APE Enabled</button></li>');
-            $('#APEStatus').on('click', function() {
-                $('#APEInformationModal').toggleClass('hidden');
-            });
-            APEModal = [
-                '<div class="APEModal hidden" id="APEInformationModal">',
-                '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
-                '<dl class="dl-horizontal">',
-                '<dt>Version 0.8.0</dt>',
-                '<dd>',
-                '<ul>',
-                '<li>Removed default report buttons</li>',
-                '<li>Added default report buttons to Toggle button</li>',
-                '<li>Corrected Symbols under events to be correct - Unable to correct Setup History</li>',
-                '<li>Added APE Button to navbar</li>',
-                '</ul>',
-                '</dd>',
-                '<dt>By</dt>',
-                '<dd>Chris Pittelko - chris@ring.com</dd>',
-                '<dt>Link</dt>',
-                '<dd>https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user</dd>',
-                '</dl>',
-                '</div>'
-            ];
-            $('.mainpanel').append(APEModal.join(''));
-            $('#APENav').addClass('active');
+           
         }
         if (pingCheck > 10) {
             clearInterval(checkExist);
