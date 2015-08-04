@@ -3,6 +3,14 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.8.2
+
+APE Button should no longer appear multiple times on the main page
+
+v0.8.1
+
+Fixed double APE Button
+
 v0.8.0 - Chris to the rescue again edition
 
 Removed default report buttons
