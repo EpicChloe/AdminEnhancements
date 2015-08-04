@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.8.1
+// @version      0.8.2
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,6 +14,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.8.2
+APE Button should no longer appear multiple times on the main page
 v0.8.1
 Fixed double APE Button
 v0.8.0 - Chris to the rescue again edition
@@ -40,7 +42,7 @@ GM_addStyle('.APETable {box-shadow: 10px 10px 20px 2px rgba(0,0,0,0.5); border: 
 GM_addStyle('#APEcontainer {min-width: 310px; margin: 0 auto}');
 GM_addStyle('.APESymbolHelper {padding-left: 10px');
 GM_addStyle('.page-header {text-align: center}');
-GM_addStyle('.APEModal {position: fixed; top: 8vh; left: 30vw; min-width: 40vw; z-index: 9999; background: #FFF; border-radius: 6px; border: solid 1px black; !important}');
+GM_addStyle('.APEModal {position: fixed; top: 8vh; left: 15vw; min-width: 70vw; z-index: 9999; background: #FFF; border-radius: 6px; border: solid 1px black; !important}');
 
 // Updates Report Listing when updated through AJAX calls.
 function highlightReports (jNode) {
@@ -433,7 +435,7 @@ function buildStreamReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.nav').append('<li class="nav-parent"><button type="button" class="btn btn-primary navbar-btn" id="APEStatus"><i class="fa fa-cogs"></i> APE Enabled</button></li>');
+    $('.topnav').find('.nav-horizontal').append('<li class="nav-parent"><button type="button" class="btn btn-primary navbar-btn" id="APEStatus"><i class="fa fa-cogs"></i> APE Enabled</button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
@@ -442,7 +444,7 @@ $(document).ready(function() {
                 '<div class="APEModal hidden" id="APEInformationModal">',
                 '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
                 '<dl class="dl-horizontal">',
-                '<dt>Version 0.8.0</dt>',
+                '<dt>Version 0.8.2</dt>',
                 '<dd>',
                 '<ul>',
                 '<li>Removed default report buttons</li>',
