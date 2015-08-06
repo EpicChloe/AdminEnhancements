@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.8.2
+// @version      0.8.4
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,6 +14,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.8.4
+Added dump button to output JSON of all Summary Button data. (For Nolan)
 v0.8.2
 APE Button should no longer appear multiple times on the main page
 v0.8.1
@@ -108,6 +110,30 @@ function highlightReports (jNode) {
     
     $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check text-success');
 
+};
+
+function dumpSummaryReports() {
+    console.log('--- 💩 ---');
+    var output = [];
+    $('.APESummaryButton').find('table').each( function( index, element ){
+        var keys = [];
+        var values = [];
+        $(this).find('tr').find(':nth-child(odd)').each( function( index, element ) {
+            keys.push($(this).text());
+        });
+        $(this).find('tr').find(':nth-child(even)').each( function( index, element ) {
+            values.push($(this).text());
+        });
+        
+        var result = values.reduce(function(result, field, index) {
+                result[keys[index]] = field;
+                return result;
+            }, {});
+        
+        output[index] = [result];
+        
+    });
+    console.log(JSON.stringify(output));
 };
 
 // Converts null values to '---' for display
@@ -500,8 +526,9 @@ function APERender() {
             $('#RSSIReportButton').on( "click", buildRSSIReport );
             $('#StreamReportButton').on( 'click', buildStreamReport );
             // Add report button toggle
-            $('#reports_resume .panel-title').append('<button class="btn btn-xs btn-primary pull-right" id="APESummaryToggle">Toggle Buttons</button>');
+            $('#reports_resume .panel-title').append('<button class="btn btn-xs btn-primary pull-right" id="APEDumpButton"><i class="fa fa-download"></i></button><button class="btn btn-xs btn-primary pull-right" id="APESummaryToggle">Toggle Buttons</button>');
             $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
+            $('#APEDumpButton').on ( 'click', dumpSummaryReports );
             // Remove buttons for broken reports
             $('#reports_resume').find("p:first").addClass('hidden defaultReportButtons');
             // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
