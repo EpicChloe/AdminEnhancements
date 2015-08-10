@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.8.4
+// @version      0.8.6
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -14,6 +14,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.8.6
+Clicking on a point in a chart, now highlights the event in the reports resume
 v0.8.4
 Added dump button to output JSON of all Summary Button data. (For Nolan)
 v0.8.2
@@ -234,12 +236,24 @@ function buildBatteryReport() {
             min: 0,
             max: 100
         },
+        tooltip: {
+            enabled: false,
+		},
         plotOptions: {
             line: {
                 dataLabels: {
                     enabled: true
                 },
-                enableMouseTracking: false
+                enableMouseTracking: true
+            },
+            series: {
+                events: {
+                    click: function(event) {
+                        
+                        var selectedEvent = $('.key.ng-binding:contains("battery_percentage")').eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                       
+                    }
+                }
             }
         },
         series: [{
@@ -288,12 +302,24 @@ function buildRSSIReport() {
             min: 0,
             max: 100
         },
+        tooltip: {
+            enabled: false,
+		},
         plotOptions: {
             line: {
                 dataLabels: {
                     enabled: true
                 },
-                enableMouseTracking: false
+                enableMouseTracking: true
+            },
+            series: {
+                events: {
+                    click: function(event) {
+                        
+                        var selectedEvent = $('.key.ng-binding:contains("rssi")').eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                        
+                    }
+                }
             }
         },
         series: [{
@@ -375,12 +401,24 @@ function buildStreamReport () {
             min: 0,
             max: 5
         },
+        tooltip: {
+            enabled: false,
+		},
         plotOptions: {
             line: {
                 dataLabels: {
                     enabled: true
                 },
-                enableMouseTracking: false
+                enableMouseTracking: true
+            },
+            series: {
+                events: {
+                    click: function(event) {
+                        
+                        var selectedEvent = $('.key.ng-binding:contains("end_stream_profile")').eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                        
+                    }
+                }
             }
         },
         series: [{
@@ -470,7 +508,7 @@ $(document).ready(function() {
                 '<div class="APEModal hidden" id="APEInformationModal">',
                 '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
                 '<dl class="dl-horizontal">',
-                '<dt>Version 0.8.2</dt>',
+                '<dt>Version 0.8.4</dt>',
                 '<dd>',
                 '<ul>',
                 '<li>Removed default report buttons</li>',
