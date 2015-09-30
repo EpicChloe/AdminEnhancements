@@ -3,6 +3,26 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.8.9
+
+Added moment.js lib to page
+
+Added ac_power status icon next to event date
+
+Added Triggering Zone to embeded context
+
+Corrected graph flow
+
+Disabled click events on Stream Report
+
+v0.8.6
+
+Clicking on a point in a chart, now highlights the event in the reports resume
+
+v0.8.4
+
+Added dump button to output JSON of all Summary Button data. (For Nolan)
+
 v0.8.2
 
 APE Button should no longer appear multiple times on the main page
