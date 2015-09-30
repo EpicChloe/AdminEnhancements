@@ -1,19 +1,26 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.8.6
+// @version      0.8.9
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
-// @require      http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
+// @require      https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js
 // @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
 // @require      http://code.highcharts.com/highcharts.js
 // @require      http://code.highcharts.com/modules/exporting.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js
 // @grant        GM_addStyle
 // @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.8.9
+Added moment.js lib to page
+Added ac_power status icon next to event date
+Added Triggering Zone to embeded context
+Corrected graph flow
+Disabled click events on Stream Report
 v0.8.6
 Clicking on a point in a chart, now highlights the event in the reports resume
 v0.8.4
@@ -38,6 +45,16 @@ For full change log, please see: https://raw.githubusercontent.com/EpicChloe/Adm
 // Yellow: RSSI < -70
 
 // Adding CSS
+function addStyleSheet(style){
+  var getHead = document.getElementsByTagName("HEAD")[0];
+  var cssNode = window.document.createElement( 'style' );
+  var elementStyle= getHead.appendChild(cssNode);
+  elementStyle.innerHTML = style;
+  return elementStyle;
+}
+// Adding updated FontAwesome
+addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css";');
+// Manual Styles
 GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
 GM_addStyle('a.APESummaryButton span {position: absolute; width: auto; color:black; height: auto; text-align: center; visibility: hidden; border-radius: 6px; !important}');
 //GM_addStyle('a.APESummaryButton span:after{content:'';position:absolute;top:50%;right:100%;margin-top:-8px;width:0;height:0;border-right:8px solid #000;border-top:8px solid transparent;border-bottom:8px solid transparent !important}');
@@ -47,6 +64,7 @@ GM_addStyle('#APEcontainer {min-width: 310px; margin: 0 auto}');
 GM_addStyle('.APESymbolHelper {padding-left: 10px');
 GM_addStyle('.page-header {text-align: center}');
 GM_addStyle('.APEModal {position: fixed; top: 8vh; left: 15vw; min-width: 70vw; z-index: 9999; background: #FFF; border-radius: 6px; border: solid 1px black; !important}');
+
 
 // Updates Report Listing when updated through AJAX calls.
 function highlightReports (jNode) {
@@ -62,13 +80,41 @@ function highlightReports (jNode) {
         endStream = jNode.find('.key.ng-binding:contains("end_stream_profile")').parent().find(':nth-child(2)').html(),
         streamUp = jNode.find('.key.ng-binding:contains("num_stream_upgrades")').parent().find(':nth-child(2)').html(),
         streamDown = jNode.find('.key.ng-binding:contains("num_stream_downgrades")').parent().find(':nth-child(2)').html(),
-        buttonTooltip;
+        buttonTooltip,
+        context = jNode.find('.context').text().trim(),
+        motionZone = '';
+        wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').html(),
+        L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').html(),
+        DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').html(),
+        API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
+        SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').html(),
+        first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
+        connect_data = '',
+        ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html();
+        
+    
     
     jNode.find('.btn').addClass('hidden defaultSummaryButton');
     
+    if (context === 'After Motion') {
+        motionZone = jNode.find('.key.ng-binding:contains("motionDetZone")').parent().find(':nth-child(2)').html();
+        jNode.find('.context').text(context + ' (' + motionZone + ')');
+    }
+    
+    if ( ac_power == 0 ) {
+        jNode.find('.status_date.ng-binding').html('<i class="fa fa-battery-three-quarters"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
+    }
+    
+    if ( ac_power == 1 ) {
+        jNode.find('.status_date.ng-binding').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
+    }
+    
     /*
+    
+    jNode.removeAttr('style');
+    
     if (rssiValue <= -70 && rssiValue !== null) {
-        jNode.css("background-color", "#fcf8e3");
+        jNode.css("background-color", "#fcf8e3");//
     }
     
     if (batteryValue <= 15 && batteryValue !== null) {
@@ -102,7 +148,7 @@ function highlightReports (jNode) {
         '</span></a>'
     ];
     
-    if (i2cValue != 0 && i2cValue !== null && i2cValue != 4) {
+    if (i2cValue != 0 && i2cValue != null && i2cValue != 4) {
         buttonTooltip.push('<a class="btn btn-xs btn-danger APESummaryButton"><i class="fa fa-warning"></i><span class="APETable">');
         buttonTooltip.push('&nbspi2C Error Detected with '+converti2cValueToString(i2cValue)+'. Hard Reset is advised&nbsp');
         buttonTooltip.push('</span></a>');
@@ -244,9 +290,10 @@ function buildBatteryReport() {
                 dataLabels: {
                     enabled: true
                 },
-                enableMouseTracking: true
+                enableMouseTracking: true,
             },
             series: {
+                lineWidth: 4,
                 events: {
                     click: function(event) {
                         
@@ -267,11 +314,12 @@ function buildBatteryReport() {
                     if (batteryData.hasOwnProperty(key)) {
                         batteryReport = batteryData.eq(key);
                         batteryValue = batteryReport.find(':nth-child(2)').html();
-                        if (batteryValue !== null) {
-                            data.unshift(parseInt(batteryValue));
+                        if (batteryValue != null) {
+                            data.push(parseInt(batteryValue));
                         }
                     }
                 }
+                console.log(data);
                 return data;
             }())
         }]
@@ -334,8 +382,8 @@ function buildRSSIReport() {
                     if (rssiData.hasOwnProperty(key)) {
                         rssiReport = rssiData.eq(key);
                         rssiValue = rssiReport.find(':nth-child(2)').html();
-                        if (rssiValue !== null) {
-                            data.unshift(parseInt(Math.abs(rssiValue)));
+                        if (rssiValue != null) {
+                            data.push(parseInt(Math.abs(rssiValue)));
                         }
                     }
                 }
@@ -366,8 +414,8 @@ function buildRSSIReport() {
                     if (rssiData.hasOwnProperty(key)) {
                         rssiReport = rssiData.eq(key);
                         rssiValue = rssiReport.find(':nth-child(2)').html();
-                        if (rssiValue !== null) {
-                            data.unshift(parseInt(Math.abs(rssiValue)));
+                        if (rssiValue != null) {
+                            data.push(parseInt(Math.abs(rssiValue)));
                         }
                     }
                 }
@@ -415,7 +463,7 @@ function buildStreamReport () {
                 events: {
                     click: function(event) {
                         
-                        var selectedEvent = $('.key.ng-binding:contains("end_stream_profile")').eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                        //var selectedEvent = $('.key.ng-binding:contains("end_stream_profile")').eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
                         
                     }
                 }
@@ -433,8 +481,8 @@ function buildStreamReport () {
                     if (endStreamData.hasOwnProperty(key)) {
                         endStreamReport = endStreamData.eq(key);
                         endStreamValue = endStreamReport.find(':nth-child(2)').html();
-                        if (endStreamValue !== null) {
-                            data.unshift(parseInt(Math.abs(endStreamValue)));
+                        if (endStreamValue != null) {
+                            data.push(parseInt(Math.abs(endStreamValue)));
                         }
                     }
                 }
@@ -465,8 +513,8 @@ function buildStreamReport () {
                     if (endStreamData.hasOwnProperty(key)) {
                         endStreamReport = endStreamData.eq(key);
                         endStreamValue = endStreamReport.find(':nth-child(2)').html();
-                        if (endStreamValue !== null) {
-                            data.unshift(parseInt(Math.abs(endStreamValue)));
+                        if (endStreamValue != null) {
+                            data.push(parseInt(Math.abs(endStreamValue)));
                         }
                     }
                 }
@@ -485,8 +533,8 @@ function buildStreamReport () {
                     if (startStreamData.hasOwnProperty(key)) {
                         startStreamReport = startStreamData.eq(key);
                         startStreamValue = startStreamReport.find(':nth-child(2)').html();
-                        if (startStreamValue !== null) {
-                            data.unshift(parseInt(Math.abs(startStreamValue)));
+                        if (startStreamValue != null) {
+                            data.push(parseInt(Math.abs(startStreamValue)));
                         }
                     }
                 }
@@ -508,16 +556,23 @@ $(document).ready(function() {
                 '<div class="APEModal hidden" id="APEInformationModal">',
                 '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
                 '<dl class="dl-horizontal">',
-                '<dt>Version 0.8.6</dt>',
+                '<dt>Version 0.8.*</dt>',
                 '<dd>',
                 '<ul>',
-                '<li><strong>Clicking on a point in a chart, now highlights the event in the reports</strong></li>',
+                '<li>Added moment.js lib to page</li>',
+                '<li>Added ac_power status icon next to event date</li>',
+                '<li>Added Triggering Zone to embeded context</li>',
+                '<li>Corrected graph flow</li>',
+                '<li>Disabled click events on Stream Report</li>',
+                '<li>Clicking on a point in a chart, now highlights the event in the reports</li>',
                 '<li>Removed default report buttons</li>',
                 '<li>Added default report buttons to Toggle button</li>',
                 '<li>Corrected Symbols under events to be correct - Unable to correct Setup History</li>',
                 '<li>Added APE Button to navbar</li>',
                 '</ul>',
                 '</dd>',
+                '<dt>Version</dt>',
+                '<dd>0.8.9</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -574,7 +629,7 @@ function APERender() {
             $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
             pingReports = 0;
-           
+               
         }
         if (pingCheck > 10) {
             clearInterval(checkExist);
