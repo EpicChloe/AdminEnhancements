@@ -3,6 +3,20 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.9
+
+Re-corrected graph flow
+
+Removed hardware version from Report Summary
+
+App firmware version now shows by default
+
+Added battery information to data dump (Nolan)
+
+Condensed report buttons into one dropdown
+
+Reports now generate within the Reports Resume div
+
 v0.8.9
 
 Added moment.js lib to page
