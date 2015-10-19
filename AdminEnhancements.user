@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.0
+// @version      0.9.1
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -15,6 +15,14 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.1
+Cleaned up some custom css
+Summary Table now has a border-radius
+Took over event coloring
+Added toggle button for Color Legend
+Added Color Legend above reports table
+Product field now states "Ring Video Doorbell" instead of "Doorbell"
+Made sub-headers in General Details easier to read
 v0.9
 Re-corrected graph flow
 Removed hardware version from Report Summary
@@ -48,13 +56,17 @@ addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/f
 // Manual Styles
 GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
 GM_addStyle('a.APESummaryButton span {position: absolute; width: auto; color:black; height: auto; text-align: center; visibility: hidden; border-radius: 6px; !important}');
-//GM_addStyle('a.APESummaryButton span:after{content:'';position:absolute;top:50%;right:100%;margin-top:-8px;width:0;height:0;border-right:8px solid #000;border-top:8px solid transparent;border-bottom:8px solid transparent !important}');
 GM_addStyle('a:hover.APESummaryButton span {visibility: visible; opacity: 1; left: 100%; top: 50%; margin-top: -15px; margin-left: 15px; z-index: 999; !important}');
-GM_addStyle('.APETable {box-shadow: 10px 10px 20px 2px rgba(0,0,0,0.5); border: 2px solid #000; background-color: #FFF; !important}');
+GM_addStyle('.APETable {box-shadow: 6px 6px 12px 2px rgba(0,0,0,0.3); border: 1px solid #000; border-radius: 8px; overflow:hidden; border-collapse:separate; background-color: #FFF; !important}');
 GM_addStyle('#APEcontainer {min-width: 310px; margin: 0 auto; padding-bottom: 20px;}');
 GM_addStyle('.APESymbolHelper {padding-left: 10px');
 GM_addStyle('.page-header {text-align: center}');
 GM_addStyle('.APEModal {position: fixed; top: 8vh; left: 15vw; min-width: 70vw; z-index: 9999; background: #FFF; border-radius: 6px; border: solid 1px black; !important}');
+GM_addStyle('#APEColorLegend {background:#f7f7f7}');
+GM_addStyle('.APEColorSwatch {border: 1px solid #999; border-radius: 2px;}');
+GM_addStyle('body {overflow-x: hidden;}');
+GM_addStyle('.doorbotdetails h5 {font-weight: 700;}');
+
 
 
 // Updates Report Listing when updated through AJAX calls.
@@ -103,26 +115,29 @@ function highlightReports (jNode) {
         jNode.find('.status_date.ng-binding').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
     }
     
-    /*
     
-    jNode.removeAttr('style');
     
-    if (rssiValue <= -70 && rssiValue !== null) {
-        jNode.css("background-color", "#fcf8e3");//
+    
+    if ( jNode.parents('div#reports_resume').length ) {
+                             
+        jNode.removeAttr('style');
+    
+        if (rssiValue <= -70 && rssiValue !== null) {
+            jNode.css("background-color", "#fcf8e3");
+        }
+    
+        if (batteryValue <= 15 && batteryValue !== null) {
+            jNode.css("background-color", "#ffc370");
+        }
+    
+        jNode.find('.context.ng-binding:contains("After OTA")').parent().css("background-color", "#d9edf7");
+    
+        jNode.find('.context.ng-binding:contains("After Setup")').parent().css("background-color", "#d9edf7");
+    
+        if (mspValue != 0 && mspValue !== null) {
+            jNode.css("background-color", "#f2dede");
+        }
     }
-    
-    if (batteryValue <= 15 && batteryValue !== null) {
-        jNode.css("background-color", "#ffc370");
-    }
-    
-    jNode.find('.context.ng-binding:contains("After OTA")').parent().css("background-color", "#d9edf7");
-    
-    jNode.find('.context.ng-binding:contains("After Setup")').parent().css("background-color", "#d9edf7");
-    
-    if (mspValue != 0 && mspValue !== null) {
-        jNode.css("background-color", "#f2dede");
-    }
-    */
     
     if (IRCutFilterIR + IRCutFilterVis <= 12) {
         IRCutFilterOn = "On";
@@ -262,6 +277,10 @@ function toggleSummaryButtons() {
     $('.APESummaryButton').toggleClass('hidden');
     $('.defaultReportButtons').toggleClass('hidden');
     $('#ReportButton').toggleClass('hidden');
+}
+
+function toggleLegend() {
+    $('#APEColorLegend').toggleClass('hidden');
 }
 
 // Adds Report Listings to AJAX watch list
@@ -568,6 +587,13 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                '<li>Cleaned up some custom css</li>',
+                '<li>Summary Table now has a border-radius</li>',
+                '<li>Took over event coloring</li>',
+                '<li>Added toggle button for Color Legend</li>',
+                '<li>Added Color Legend above reports table</li>',
+                '<li>Product field now states "Ring Video Doorbell" instead of "Doorbell"</li>',
+                '<li>Made sub-headers in General Details easier to read</li>',
                 '<li>Re-corrected graph flow</li>',
                 '<li>Removed hardware version from Report Summary</li>',
                 '<li>App firmware version now shows by default</li>',
@@ -577,7 +603,7 @@ $(document).ready(function() {
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.8.9</dd>',
+                '<dd>0.9.1</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -632,6 +658,11 @@ function APERender() {
             // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
             $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
+            $('#reports_resume th:first').css('width', '26px').html('<button id="reports_resume_legend"><i class="fa fa-info-circle fa-align-center"></i></button>').parent().parent().parent().parent().prepend('<div id="APEColorLegend" class="hidden">&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#f2dede;"></i>&nbsp;MSP430 Error&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#ffc370;"></i>&nbsp;Low Battery(<15%)&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#d9edf7;"></i>&nbsp;OTA/Setup&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#fcf8e3;"></i>&nbsp;RSSI <70</div>');
+            $('#reports_resume_legend').on ( 'click', toggleLegend );
+            // QoL Changes
+            if ( $('.doorbotKMID .doorbotProduct p').text() == 'Doorbell' ) { $('.doorbotKMID .doorbotProduct p').text('Ring Video Doorbell'); };
+            $('.doorbotdetails h5').css('font-weight', '700');
             pingReports = 0;
                
         }
