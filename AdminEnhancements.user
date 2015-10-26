@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.1
+// @version      0.9.2
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -15,6 +15,9 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.2
+Corrected RSSI Graph Flow
+Fixed color coding on Chime Reports
 v0.9.1
 Cleaned up some custom css
 Summary Table now has a border-radius
@@ -85,7 +88,7 @@ function highlightReports (jNode) {
         streamDown = jNode.find('.key.ng-binding:contains("num_stream_downgrades")').parent().find(':nth-child(2)').html(),
         buttonTooltip,
         context = jNode.find('.context').text().trim(),
-        motionZone = '';
+        motionZone = '',
         wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').html(),
         L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').html(),
         DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').html(),
@@ -122,11 +125,11 @@ function highlightReports (jNode) {
                              
         jNode.removeAttr('style');
     
-        if (rssiValue <= -70 && rssiValue !== null) {
+        if (rssiValue <= -70 && rssiValue != null) {
             jNode.css("background-color", "#fcf8e3");
         }
     
-        if (batteryValue <= 15 && batteryValue !== null) {
+        if (batteryValue <= 15 && batteryValue != null) {
             jNode.css("background-color", "#ffc370");
         }
     
@@ -134,7 +137,7 @@ function highlightReports (jNode) {
     
         jNode.find('.context.ng-binding:contains("After Setup")').parent().css("background-color", "#d9edf7");
     
-        if (mspValue != 0 && mspValue !== null) {
+        if (mspValue != 0 && mspValue != null) {
             jNode.css("background-color", "#f2dede");
         }
     }
@@ -443,7 +446,7 @@ function buildRSSIReport() {
                         rssiReport = rssiData.eq(key);
                         rssiValue = rssiReport.find(':nth-child(2)').html();
                         if (rssiValue != null) {
-                            data.push(parseInt(Math.abs(rssiValue)));
+                            data.unshift(parseInt(Math.abs(rssiValue)));
                         }
                     }
                 }
@@ -587,6 +590,8 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                '<li>Corrected RSSI Graph Flow</li>',
+                '<li>Fixed color coding on Chime Reports</li>',
                 '<li>Cleaned up some custom css</li>',
                 '<li>Summary Table now has a border-radius</li>',
                 '<li>Took over event coloring</li>',
@@ -594,16 +599,10 @@ $(document).ready(function() {
                 '<li>Added Color Legend above reports table</li>',
                 '<li>Product field now states "Ring Video Doorbell" instead of "Doorbell"</li>',
                 '<li>Made sub-headers in General Details easier to read</li>',
-                '<li>Re-corrected graph flow</li>',
-                '<li>Removed hardware version from Report Summary</li>',
-                '<li>App firmware version now shows by default</li>',
-                '<li>Added battery information to data dump (Nolan)</li>',
-                '<li>Condensed report buttons into one dropdown</li>',
-                '<li>Reports now generate within the Reports Resume div</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.1</dd>',
+                '<dd>0.9.2</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
