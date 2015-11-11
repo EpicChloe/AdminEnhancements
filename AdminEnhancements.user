@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.2
+// @version      0.9.3
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -10,11 +10,17 @@
 // @require      http://code.highcharts.com/highcharts.js
 // @require      http://code.highcharts.com/modules/exporting.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js
 // @grant        GM_addStyle
 // @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.9.3
+Corrected conflict with Chime Firmware Audios
+Added visjs for timeline
+Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline
+Added timeline of reports with label of time since last report
 v0.9.2
 Corrected RSSI Graph Flow
 Fixed color coding on Chime Reports
@@ -56,6 +62,7 @@ function addStyleSheet(style){
 }
 // Adding updated FontAwesome
 addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css";');
+addStyleSheet('@import "https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css";');
 // Manual Styles
 GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
 GM_addStyle('a.APESummaryButton span {position: absolute; width: auto; color:black; height: auto; text-align: center; visibility: hidden; border-radius: 6px; !important}');
@@ -103,7 +110,7 @@ function highlightReports (jNode) {
     jNode.find('.key.ng-binding:contains("hw")').parent().remove();
     jNode.find('.key.ng-binding:contains("app")').parent().removeClass('ng-hide');
     
-    jNode.find('.btn').addClass('hidden defaultSummaryButton');
+    jNode.find('[popover-template="\'summaryTemplate.html\'"]').addClass('hidden defaultSummaryButton');
     
     if (context === 'After Motion') {
         motionZone = jNode.find('.key.ng-binding:contains("motionDetZone")').parent().find(':nth-child(2)').html();
@@ -276,7 +283,7 @@ function colorBlindHelper () {
 }
 
 function toggleSummaryButtons() {
-    $('.defaultSummaryButton').toggleClass('hidden');
+    $('[popover-template="\'summaryTemplate.html\'"]').toggleClass('hidden');
     $('.APESummaryButton').toggleClass('hidden');
     $('.defaultReportButtons').toggleClass('hidden');
     $('#ReportButton').toggleClass('hidden');
@@ -289,8 +296,84 @@ function toggleLegend() {
 // Adds Report Listings to AJAX watch list
 waitForKeyElements ("tr.ng-scope", highlightReports);
 
+// Returns difference in timestamps
+function timestampDifference(now, then) {
+    
+    //var now  = "11/10/2015 01:42:08:353";
+    //var then = "11/09/2015 01:42:41:352";
+
+    var ms = moment(now).diff(moment(then));
+    var d = moment.duration(ms);
+    var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss");
+    
+    return s;
+    
+}
+
+// Builds Time Line using visjs
+function buildTimeline() {
+    
+    // Assign Initial Variables
+    var dataArray = [],
+        lastValue,
+        content;
+    
+    // Clear contents of DOM element
+    $('#APEcontainer').html('');
+    $('#APEcontainer').html('<h3>Timeline (Time Since Last Event)</h3>');
+     
+    // DOM element where the Timeline will be attached
+    var container = document.getElementById('APEcontainer');
+    
+    var timeData = $('td.status .key.ng-binding:contains("time")').parent(),
+                    timeReport,
+                    timeValue,
+                    data = [];
+    for (var key in timeData) {
+        if (timeData.hasOwnProperty(key)) {
+            timeReport = timeData.eq(key);
+            timeValue = timeReport.find(':nth-child(2)').html();
+            if (timeValue != null) {
+                data.unshift(timeValue);
+            }
+        }
+    }
+    
+    // Convert and sort by UNIX timestamp
+    data.sort(function(a,b){
+        return moment(a).unix() - moment(b).unix();
+    });
+    
+    // Keeping data sorted by handling data push in order
+    for (var i = 0; i < data.length; i++) { 
+        // Assigns data label as oldest or time difference
+        if(i!=0){content = timestampDifference(data[i], lastValue);}else{content='oldest'}
+        // Pushes data index to new ojbject
+        dataArray.push({
+            id: i,
+            start: data[i],
+            content: content
+        });
+        // Assign last timestamp for next call
+        lastValue = data[i];
+    }
+    
+    // Create timeline data set from 
+    var timelineData = new vis.DataSet(dataArray);
+
+    // Configuration for the Timeline
+    var options = {};
+
+    // Create a Timeline
+    var timeline = new vis.Timeline(container, timelineData, options);
+
+}
+
 // Builds Battery Chart using High Charts Library
 function buildBatteryReport() {
+    
+    $('#APEcontainer').html('');
+    
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line'
@@ -350,7 +433,7 @@ function buildBatteryReport() {
                         }
                     }
                 }
-                console.log(data);
+                
                 return data;
             }())
         }]
@@ -359,6 +442,9 @@ function buildBatteryReport() {
 
 // Builds RSSI Chart using High Charts Library
 function buildRSSIReport() {
+    
+    $('#APEcontainer').html('');
+    
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line'
@@ -458,6 +544,9 @@ function buildRSSIReport() {
 
 // Builds Stream Report using High Charts Library
 function buildStreamReport () {
+    
+    $('#APEcontainer').html('');
+    
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line'
@@ -590,19 +679,16 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                '<li>Corrected conflict with Chime Firmware Audios</li>',
+                '<li>Added visjs for timeline</li>',
+                '<li>Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline</li>',
+                '<li>Added timeline of reports with label of time since last report</li>',
                 '<li>Corrected RSSI Graph Flow</li>',
                 '<li>Fixed color coding on Chime Reports</li>',
-                '<li>Cleaned up some custom css</li>',
-                '<li>Summary Table now has a border-radius</li>',
-                '<li>Took over event coloring</li>',
-                '<li>Added toggle button for Color Legend</li>',
-                '<li>Added Color Legend above reports table</li>',
-                '<li>Product field now states "Ring Video Doorbell" instead of "Doorbell"</li>',
-                '<li>Made sub-headers in General Details easier to read</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.2</dd>',
+                '<dd>0.9.3</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -644,11 +730,12 @@ function APERender() {
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
-            $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
+            $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li><a id="APETimeline">Generate Timeline (Last Update)</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
             $('#ReportButton').parent().prepend('<div id="APEcontainer"></div>');
             $('#BatteryReport').on( "click", buildBatteryReport );
             $('#RSSIReport').on( "click", buildRSSIReport );
             $('#StreamReport').on( 'click', buildStreamReport );
+            $('#APETimeline').on( 'click', buildTimeline );
             // Add report button toggle
             $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
             $('#APEDumpButton').on ( 'click', dumpSummaryReports );
@@ -670,5 +757,3 @@ function APERender() {
         }
     }, 1000);
 }
-
-
