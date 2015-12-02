@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.5
+// @version      0.9.6
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.6
+Fixed issue with time difference calculation
 v0.9.5
 Added Battery Timeline
 Added Startup Timeline
@@ -339,7 +341,7 @@ function timestampDifference(now, then, mil, short) {
     //var now  = "11/10/2015 01:42:08:353";
     //var then = "11/09/2015 01:42:41:352";
 
-    var ms = moment(now,"DD/MM/YYYY HH:mm:ss:SSS").diff(moment(then,"DD/MM/YYYY HH:mm:ss:SSS"));
+    var ms = moment(now).diff(moment(then));
     var d = moment.duration(ms);
     if (mil) {
         var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss:SSS");
@@ -449,7 +451,7 @@ function buildTimeline() {
     // Keeping data sorted by handling data push in order
     for (var i = 0; i < data.length; i++) { 
         // Assigns data label as oldest or time difference
-        if(i!=0){content = timestampDifference(data[i], lastValue);}else{content='oldest'}
+        if(i!=0){content = timestampDifference(data[i], lastValue, false, false);}else{content='oldest'}
         // Pushes data index to new ojbject
         dataArray.push({
             id: i,
@@ -845,6 +847,7 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                    '<li>Fixed issue with time difference calculation</li>'
                     '<li>Added Battery Timeline</li>',
                     '<li>Added Startup Timeline</li>',
                     '<li>Added Startup hover button</li>',
@@ -857,7 +860,7 @@ $(document).ready(function() {
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.5</dd>',
+                '<dd>0.9.6</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
