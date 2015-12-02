@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.3
+// @version      0.9.5
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,11 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.5
+Added Battery Timeline
+Added Startup Timeline
+Added Startup hover button
+Updated Font Awesome to 4.5
 v0.9.3
 Corrected conflict with Chime Firmware Audios
 Added visjs for timeline
@@ -61,7 +66,8 @@ function addStyleSheet(style){
   return elementStyle;
 }
 // Adding updated FontAwesome
-addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css";');
+addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css";');
+// Adding Stylesheet for visjs
 addStyleSheet('@import "https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css";');
 // Manual Styles
 GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
@@ -76,6 +82,7 @@ GM_addStyle('#APEColorLegend {background:#f7f7f7}');
 GM_addStyle('.APEColorSwatch {border: 1px solid #999; border-radius: 2px;}');
 GM_addStyle('body {overflow-x: hidden;}');
 GM_addStyle('.doorbotdetails h5 {font-weight: 700;}');
+GM_addStyle('APEData {display:none}');
 
 
 
@@ -102,8 +109,9 @@ function highlightReports (jNode) {
         API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
         SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').html(),
         first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
-        connect_data = '',
-        ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html();
+        connectData = [],
+        ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
+        JSONData = [];
         
     // Delete Hardware Version From Report
     
@@ -124,9 +132,6 @@ function highlightReports (jNode) {
     if ( ac_power == 1 ) {
         jNode.find('.status_date.ng-binding').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
     }
-    
-    
-    
     
     if ( jNode.parents('div#reports_resume').length ) {
                              
@@ -168,10 +173,42 @@ function highlightReports (jNode) {
     ];
     
     if (i2cValue != 0 && i2cValue != null && i2cValue != 4) {
-        buttonTooltip.push('<a class="btn btn-xs btn-danger APESummaryButton"><i class="fa fa-warning"></i><span class="APETable">');
-        buttonTooltip.push('&nbspi2C Error Detected with '+converti2cValueToString(i2cValue)+'. Hard Reset is advised&nbsp');
+        buttonTooltip.push('&nbsp<a class="btn btn-xs btn-danger APESummaryButton"><i class="fa fa-warning"></i><span class="APETable">');
+        buttonTooltip.push('&nbspi2C Error Detected with '+converti2cValueToString(i2cValue)+'.&nbsp');
         buttonTooltip.push('</span></a>');
     }
+    /*
+        wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').html(),
+        L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').html(),
+        DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').html(),
+        API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
+        SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').html(),
+        first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
+     */       
+    if (context === 'After Ding' || context === 'After Motion') {
+        
+        buttonTooltip.push('&nbsp;<a class="btn btn-xs btn-primary APESummaryButton"><i class="fa fa-tachometer"></i><span>');
+        buttonTooltip.push('<table class="table table-bordered APETable">');
+        buttonTooltip.push('<tr><td>Wake Up:</td><td>'+wake_up+'</td></tr>');
+        buttonTooltip.push('<tr><td>L3</td><td>'+L3+'</td><td>Time</td><td>'+timestampDifference(L3, wake_up, false, true)+'</td></tr>');
+        buttonTooltip.push('<tr><td>DNS Lookup</td><td>'+DNS_lookup+'</td><td>Time</td><td>'+timestampDifference(DNS_lookup, wake_up, false, true)+'</td></tr>');
+        buttonTooltip.push('<tr><td>API Response</td><td>'+API_response+'</td><td>Time</td><td>'+timestampDifference(API_response, wake_up, false, true)+'</td></tr>');
+        //buttonTooltip.push('<tr><td>SIP Accept</td><td>'+SIP_accept+'</td><td>Time</td><td>'+timestampDifference(SIP_accept, wake_up, false, true)+'</td></tr>');
+        buttonTooltip.push('<tr><td>First Audio</td><td>'+first_audio+'</td><td>Time</td><td>'+timestampDifference(first_audio, wake_up, false, true)+'</td></tr>');
+        buttonTooltip.push('</table>');
+        buttonTooltip.push('</span></a>');
+        
+        
+        connectData.push({x: wake_up, y: timestampDifference(L3, wake_up, false, true), group: 0});
+        connectData.push({x: wake_up, y: timestampDifference(DNS_lookup, wake_up, false, true), group: 1});
+        connectData.push({x: wake_up, y: timestampDifference(API_response, wake_up, false, true), group: 2});
+        //connectData.push({x: wake_up, y: timestampDifference(SIP_accept, wake_up, false, true), group: 3});
+        connectData.push({x: wake_up, y: timestampDifference(first_audio, wake_up, false, true), group: 4});
+    
+        JSONData.push({'connectData': connectData});
+    }
+    
+    buttonTooltip.push('<APEData>' + JSON.stringify(JSONData) + '</APEData>');
     
     jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
     
@@ -297,16 +334,81 @@ function toggleLegend() {
 waitForKeyElements ("tr.ng-scope", highlightReports);
 
 // Returns difference in timestamps
-function timestampDifference(now, then) {
+function timestampDifference(now, then, mil, short) {
     
     //var now  = "11/10/2015 01:42:08:353";
     //var then = "11/09/2015 01:42:41:352";
 
-    var ms = moment(now).diff(moment(then));
+    var ms = moment(now,"DD/MM/YYYY HH:mm:ss:SSS").diff(moment(then,"DD/MM/YYYY HH:mm:ss:SSS"));
     var d = moment.duration(ms);
-    var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss");
+    if (mil) {
+        var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss:SSS");
+    } else if (short) {
+        var s = moment.utc(ms).format("ss.SSS");
+    } else {
+        var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss");
+    }
     
     return s;
+    
+}
+
+// Builds Startup Timeline (visjs)
+function buildTimelineStartup() {
+    
+    var data = [];
+    
+    $( "APEData" ).each( function( index, element ){
+        
+        var _data = {};
+        
+        _data = JSON.parse( $( this ).text() );
+        
+        if (_data[0] == null) {
+            
+        } else { 
+            
+            $.each(_data[0]['connectData'], function (index, value) {
+                
+                data.push(value);
+                
+            });
+            
+        }
+        
+    });
+    
+    console.log(data);
+    
+    // Clear contents of DOM element
+    $('#APEcontainer').html('');
+    $('#APEcontainer').html('<h3>Timeline (Start Up)</h3>');
+    
+    // DOM element where the Timeline will be attached
+    var container = document.getElementById('APEcontainer');
+    
+    var groups = new vis.DataSet(); 
+    
+    groups.add({id: 0, content: "L3"});
+    groups.add({id: 1, content: "DNS_lookup"});
+    groups.add({id: 2, content: "API_response"});
+    groups.add({id: 3, content: "SIP_accept"});
+    groups.add({id: 4, content: "first_audio"});
+    
+    var dataset = new vis.DataSet(data);
+    
+    var options = {
+        style:'bar',
+        stack:true,
+        barChart: {width:50, align:'center'}, // align: left, center, right
+        drawPoints: false,
+        dataAxis: {
+            icons:true
+        },
+        legend: true,
+        orientation:'top'
+    };
+    var graph2d = new vis.Graph2d(container, data, groups, options);
     
 }
 
@@ -369,6 +471,70 @@ function buildTimeline() {
 
 }
 
+// Builds Battery Timeline
+
+function buildTimelineBattery() {
+        
+    $('#APEcontainer').html('');
+    $('#APEcontainer').html('<h3>Timeline (Battery)</h3>');
+    
+   var container = document.getElementById('APEcontainer');
+  var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
+                    batteryReport,
+                    batteryValue,
+                    timeData = $('td.status .key.ng-binding:contains("time")').parent(),
+                    timeReport,
+                    timeValue,
+                    data = [];
+                for (var key in batteryData) {
+                    if (batteryData.hasOwnProperty(key)) {
+                        batteryReport = batteryData.eq(key);
+                        batteryValue = batteryReport.find(':nth-child(2)').html();
+                        
+                        timeReport = timeData.eq(key);
+                        timeValue = timeReport.find(':nth-child(2)').html();
+                        if (timeValue != null) {
+                            data.unshift([timeValue, parseInt(batteryValue)]);
+                        }
+                        
+                    }
+                }
+                
+                data.sort(function(a,b){
+                    return moment(a[0]).unix() - moment(b[0]).unix();
+                });
+    var dataArray = [];
+    
+    // Keeping data sorted by handling data push in order
+    for (var i = 0; i < data.length; i++) { 
+        // Pushes data index to new ojbject
+        dataArray.push({
+            x: data[i][0],
+            y: data[i][1],
+            label: {
+                content: data[i][1]
+            }
+        });
+        // Assign last timestamp for next call
+    }
+
+  var dataset = new vis.DataSet(dataArray);
+  var options = {
+    drawPoints: {
+        size: 4,
+        style: 'circle'
+    },
+    interpolation: {
+        enabled: false
+    }
+  };
+  var graph2d = new vis.Graph2d(container, dataset, options);
+            
+
+                
+
+};
+
 // Builds Battery Chart using High Charts Library
 function buildBatteryReport() {
     
@@ -407,7 +573,7 @@ function buildBatteryReport() {
                 enableMouseTracking: true,
             },
             series: {
-                lineWidth: 4,
+                lineWidth: 2,
                 events: {
                     click: function(event) {
                         
@@ -679,16 +845,19 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
-                '<li>Corrected conflict with Chime Firmware Audios</li>',
-                '<li>Added visjs for timeline</li>',
-                '<li>Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline</li>',
-                '<li>Added timeline of reports with label of time since last report</li>',
-                '<li>Corrected RSSI Graph Flow</li>',
-                '<li>Fixed color coding on Chime Reports</li>',
+                    '<li>Added Battery Timeline</li>',
+                    '<li>Added Startup Timeline</li>',
+                    '<li>Added Startup hover button</li>',
+                    '<li>Corrected conflict with Chime Firmware Audios</li>',
+                    '<li>Added visjs for timeline</li>',
+                    '<li>Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline</li>',
+                    '<li>Added timeline of reports with label of time since last report</li>',
+                    '<li>Corrected RSSI Graph Flow</li>',
+                    '<li>Fixed color coding on Chime Reports</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.3</dd>',
+                '<dd>0.9.5</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -730,12 +899,14 @@ function APERender() {
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
-            $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li><a id="APETimeline">Generate Timeline (Last Update)</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
+            $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li><a id="APETimeline">Generate Timeline (Last Update)</a></li><li><a id="APETimelineBattery">Generate Timeline (Battery)</a></li><li><a id="APETimelineStartup">Generate Timeline (Start Up)</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
             $('#ReportButton').parent().prepend('<div id="APEcontainer"></div>');
             $('#BatteryReport').on( "click", buildBatteryReport );
             $('#RSSIReport').on( "click", buildRSSIReport );
             $('#StreamReport').on( 'click', buildStreamReport );
             $('#APETimeline').on( 'click', buildTimeline );
+            $('#APETimelineBattery').on( 'click', buildTimelineBattery );
+            $('#APETimelineStartup').on( 'click', buildTimelineStartup );
             // Add report button toggle
             $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
             $('#APEDumpButton').on ( 'click', dumpSummaryReports );
@@ -757,3 +928,5 @@ function APERender() {
         }
     }, 1000);
 }
+
+
