@@ -847,7 +847,7 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
-                    '<li>Fixed issue with time difference calculation</li>'
+                    '<li>Fixed issue with time difference calculation</li>',
                     '<li>Added Battery Timeline</li>',
                     '<li>Added Startup Timeline</li>',
                     '<li>Added Startup hover button</li>',
