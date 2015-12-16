@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.6.1
+// @version      0.9.6.2
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -18,6 +18,7 @@
 /* Change Log
 v0.9.6
 Fixed issue with time difference calculation
+Fixed issue with highcharts update
 v0.9.5
 Added Battery Timeline
 Added Startup Timeline
@@ -544,7 +545,8 @@ function buildBatteryReport() {
     
     $('#APEcontainer').highcharts({
         chart: {
-            type: 'line'
+            type: 'line',
+            height: 400
         },
         title: {
             text: 'Battery Report'
@@ -615,7 +617,8 @@ function buildRSSIReport() {
     
     $('#APEcontainer').highcharts({
         chart: {
-            type: 'line'
+            type: 'line',
+            height: 400
         },
         title: {
             text: 'RSSI Report'
@@ -717,7 +720,8 @@ function buildStreamReport () {
     
     $('#APEcontainer').highcharts({
         chart: {
-            type: 'line'
+            type: 'line',
+            height: 400
         },
         title: {
             text: 'Stream Profile Report'
