@@ -3,6 +3,62 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.9.8
+
+Changed APE interface elements to purple to distinguish from standard elements
+
+Added temperature to event summary table
+
+Added temperature to info dump function
+
+v0.9.6
+
+Fixed issue with time difference calculation
+
+Fixed issue with highcharts update
+
+v0.9.5
+
+Added Battery Timeline
+
+Added Startup Timeline
+
+Added Startup hover button
+
+Updated Font Awesome to 4.5
+
+v0.9.3
+
+Corrected conflict with Chime Firmware Audios
+
+Added visjs for timeline
+
+Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline
+
+Added timeline of reports with label of time since last report
+
+v0.9.2
+
+Corrected RSSI Graph Flow
+
+Fixed color coding on Chime Reports
+
+v0.9.1
+
+Cleaned up some custom css
+
+Summary Table now has a border-radius
+
+Took over event coloring
+
+Added toggle button for Color Legend
+
+Added Color Legend above reports table
+
+Product field now states "Ring Video Doorbell" instead of "Doorbell"
+
+Made sub-headers in General Details easier to read
+
 v0.9
 
 Re-corrected graph flow
