@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.6.2
+// @version      0.9.8
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,13 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.8
+Changed APE interface elements to purple to distinguish from standard elements
+Added temperature to event summary table
+Added temperature to info dump function
+Added go button to see location on google maps
+Added temperature warning button
+Added Google Material Design Icons
 v0.9.6
 Fixed issue with time difference calculation
 Fixed issue with highcharts update
@@ -72,6 +79,8 @@ function addStyleSheet(style){
 addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css";');
 // Adding Stylesheet for visjs
 addStyleSheet('@import "https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css";');
+// Adding Google Material Design Icons
+addStyleSheet('@import "https://fonts.googleapis.com/icon?family=Material+Icons";');
 // Manual Styles
 GM_addStyle('a.APESummaryButton {position: relative;display: inline; !important}');
 GM_addStyle('a.APESummaryButton span {position: absolute; width: auto; color:black; height: auto; text-align: center; visibility: hidden; border-radius: 6px; !important}');
@@ -86,8 +95,11 @@ GM_addStyle('.APEColorSwatch {border: 1px solid #999; border-radius: 2px;}');
 GM_addStyle('body {overflow-x: hidden;}');
 GM_addStyle('.doorbotdetails h5 {font-weight: 700;}');
 GM_addStyle('APEData {display:none}');
-
-
+GM_addStyle('#APEStatus {background-color: purple; color: white; border: 2px solid black;}');
+GM_addStyle('#APEStatus-parent {padding-left: 5px;}');
+GM_addStyle('.btn-ape {background-color: purple; color: white; border: 2px solid black;}');
+GM_addStyle('.btn-ape:hover, .btn-ape:focus {color: white !important;}');
+GM_addStyle('.APELocationGoButton {top: 132px !important;}');
 
 // Updates Report Listing when updated through AJAX calls.
 function highlightReports (jNode) {
@@ -114,7 +126,8 @@ function highlightReports (jNode) {
         first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
         connectData = [],
         ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
-        JSONData = [];
+        JSONData = [],
+        temp = jNode.find('.key.ng-binding').filter(function() {return $(this).text() === "temp";}).parent().find(':nth-child(2)').html();
         
     // Delete Hardware Version From Report
     
@@ -164,22 +177,18 @@ function highlightReports (jNode) {
     }
         
     buttonTooltip = [
-        '&nbsp;<a class="btn btn-xs btn-primary APESummaryButton">Summary<span>',
+        '&nbsp;<a class="btn btn-xs btn-ape APESummaryButton">Summary<span>',
         '<table class="table table-bordered APETable">',
         '<tr><td>RSSI:</td><td>'+nullConvert(rssiValue)+'</td><td>Battery:</td><td>'+nullConvert(batteryValue)+'</td></tr>',
         '<tr><td>MSP Error:</td><td>'+nullConvert(mspValue)+'</td><td>IR Cut Filter:</td><td>'+nullConvert(IRCutFilterOn)+'</td></tr>',
         '<tr><td>Stream Start:</td><td>'+nullConvert(startStream)+'</td><td>Stream End:</td><td>'+nullConvert(endStream)+'</td></tr>',
         '<tr><td>Stream Upgrades:</td><td>'+nullConvert(streamUp)+'</td><td>Stream Downgrades:</td><td>'+nullConvert(streamDown)+'</td></tr>',
         '<tr><td>i2c Error:</td><td>'+nullConvert(i2cValue)+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
+        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td></tr>',
         '</table>',
         '</span></a>'
     ];
     
-    if (i2cValue != 0 && i2cValue != null && i2cValue != 4) {
-        buttonTooltip.push('&nbsp<a class="btn btn-xs btn-danger APESummaryButton"><i class="fa fa-warning"></i><span class="APETable">');
-        buttonTooltip.push('&nbspi2C Error Detected with '+converti2cValueToString(i2cValue)+'.&nbsp');
-        buttonTooltip.push('</span></a>');
-    }
     /*
         wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').html(),
         L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').html(),
@@ -190,7 +199,7 @@ function highlightReports (jNode) {
      */       
     if (context === 'After Ding' || context === 'After Motion') {
         
-        buttonTooltip.push('&nbsp;<a class="btn btn-xs btn-primary APESummaryButton"><i class="fa fa-tachometer"></i><span>');
+        buttonTooltip.push('&nbsp;<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-tachometer"></i><span>');
         buttonTooltip.push('<table class="table table-bordered APETable">');
         buttonTooltip.push('<tr><td>Wake Up:</td><td>'+wake_up+'</td></tr>');
         buttonTooltip.push('<tr><td>L3</td><td>'+L3+'</td><td>Time</td><td>'+timestampDifference(L3, wake_up, false, true)+'</td></tr>');
@@ -210,6 +219,24 @@ function highlightReports (jNode) {
     
         JSONData.push({'connectData': connectData});
     }
+    
+    if (i2cValue != 0 && i2cValue != null && i2cValue != 4) {
+        buttonTooltip.push('&nbsp<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-warning"></i><span class="APETable">');
+        buttonTooltip.push('&nbspi2C Error Detected with '+converti2cValueToString(i2cValue)+'.&nbsp');
+        buttonTooltip.push('</span></a>');
+    }
+    
+    var tempConverted = nullConvert(temp).replace(/\(.*?\)/, '').replace(' F ', '');
+    
+    if (tempConverted !== '---' && (tempConverted > 135 || tempConverted < 37)) {
+        buttonTooltip.push('&nbsp<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-cloud"></i><span class="APETable">');
+        buttonTooltip.push('&nbspTempature Warning: '+tempConverted+'F&nbsp');
+        buttonTooltip.push('</span></a>');
+    }
+    
+    // 37 - Performance
+    // 32 - Battery stops charging
+    // 23 - Derps
     
     buttonTooltip.push('<APEData>' + JSON.stringify(JSONData) + '</APEData>');
     
@@ -251,9 +278,10 @@ function dumpSummaryReports() {
         
         var battery = $(this).find('.key.ng-binding:contains("battery_percentage")').parent().find(':nth-child(2)').html(),
             voltage = $(this).find('.key.ng-binding:contains("battery_voltage")').parent().find(':nth-child(2)').html(),
-            ac_power = $(this).find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html();
+            ac_power = $(this).find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
+            temp = $(this).find('.key.ng-binding').filter(function() {return $(this).text() === "temp";}).parent().find(':nth-child(2)').html();
         
-        output[index] = {date, ac_power, battery, voltage};
+        output[index] = {date, ac_power, battery, voltage, temp};
     });
     
     console.log(JSON.stringify(output));
@@ -839,7 +867,7 @@ function buildStreamReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.topnav').find('.nav-horizontal').append('<li class="nav-parent"><button type="button" class="btn btn-primary navbar-btn" id="APEStatus"><i class="fa fa-cogs"></i> APE Enabled</button></li>');
+    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-cog fa-spin"></i></button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
@@ -851,20 +879,20 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                    '<li>Changed APE interface elements to purple to distinguish from standard elements</li>',
+                    '<li>Added temperature to event summary table</li>',
+                    '<li>Added temperature to info dump function</li>',
+                    '<li>Added go button to see location on google maps</li>',
+                    '<li>Added temperature warning button</li>',
                     '<li>Fixed issue with time difference calculation</li>',
                     '<li>Added Battery Timeline</li>',
                     '<li>Added Startup Timeline</li>',
                     '<li>Added Startup hover button</li>',
                     '<li>Corrected conflict with Chime Firmware Audios</li>',
-                    '<li>Added visjs for timeline</li>',
-                    '<li>Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline</li>',
-                    '<li>Added timeline of reports with label of time since last report</li>',
-                    '<li>Corrected RSSI Graph Flow</li>',
-                    '<li>Fixed color coding on Chime Reports</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.6</dd>',
+                '<dd>0.9.8</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -906,7 +934,7 @@ function APERender() {
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
             console.log('Found Reports! Generating Battery Report Button!');
-            $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-primary btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li><a id="APETimeline">Generate Timeline (Last Update)</a></li><li><a id="APETimelineBattery">Generate Timeline (Battery)</a></li><li><a id="APETimelineStartup">Generate Timeline (Start Up)</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
+            $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-ape btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li><a id="APETimeline">Generate Timeline (Last Update)</a></li><li><a id="APETimelineBattery">Generate Timeline (Battery)</a></li><li><a id="APETimelineStartup">Generate Timeline (Start Up)</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
             $('#ReportButton').parent().prepend('<div id="APEcontainer"></div>');
             $('#BatteryReport').on( "click", buildBatteryReport );
             $('#RSSIReport').on( "click", buildRSSIReport );
@@ -927,6 +955,8 @@ function APERender() {
             // QoL Changes
             if ( $('.doorbotKMID .doorbotProduct p').text() == 'Doorbell' ) { $('.doorbotKMID .doorbotProduct p').text('Ring Video Doorbell'); };
             $('.doorbotdetails h5').css('font-weight', '700');
+            var coordinates = $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().text().replace('coordinates', '').replace('Latitude: ', '').replace('Longitude: ', ',').trim().replace('\n', '').replace(/ /g, '');
+            $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().parent().append('<a class="btn btn-ape APELocationGoButton" href="https://www.google.com/search?q='+coordinates+'">Go <i class="fa fa-angle-double-right"></i></a>');
             pingReports = 0;
                
         }
