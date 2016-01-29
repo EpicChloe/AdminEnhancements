@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.8
+// @version      0.9.8.1
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,10 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.8.1
+Disabled APE on Chimes
+Disabled Temperature Warning on Stick Up Cams until temperature reading in Report Summary is in a valid format
+Go Button should now open a new tab/window
 v0.9.8
 Changed APE interface elements to purple to distinguish from standard elements
 Added temperature to event summary table
@@ -127,12 +131,28 @@ function highlightReports (jNode) {
         connectData = [],
         ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
         JSONData = [],
+        deviceType = '',
         temp = jNode.find('.key.ng-binding').filter(function() {return $(this).text() === "temp";}).parent().find(':nth-child(2)').html();
         
     // Delete Hardware Version From Report
     
     jNode.find('.key.ng-binding:contains("hw")').parent().remove();
     jNode.find('.key.ng-binding:contains("app")').parent().removeClass('ng-hide');
+    
+    // Find Device Type
+    
+    if(window.location.href.indexOf("doorbots") > -1) {
+       deviceType = 'ring';
+    }
+    
+    if(window.location.href.indexOf("cam") > -1) {
+       deviceType = 'cam';
+    }
+    
+    if(window.location.href.indexOf("chimes") > -1) {
+       deviceType = 'chime';
+    }
+    
     
     jNode.find('[popover-template="\'summaryTemplate.html\'"]').addClass('hidden defaultSummaryButton');
     
@@ -228,7 +248,7 @@ function highlightReports (jNode) {
     
     var tempConverted = nullConvert(temp).replace(/\(.*?\)/, '').replace(' F ', '');
     
-    if (tempConverted !== '---' && (tempConverted > 135 || tempConverted < 37)) {
+    if (tempConverted !== '---' && (tempConverted > 135 || tempConverted < 37) && deviceType === 'ring') {
         buttonTooltip.push('&nbsp<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-cloud"></i><span class="APETable">');
         buttonTooltip.push('&nbspTempature Warning: '+tempConverted+'F&nbsp');
         buttonTooltip.push('</span></a>');
@@ -240,7 +260,9 @@ function highlightReports (jNode) {
     
     buttonTooltip.push('<APEData>' + JSON.stringify(JSONData) + '</APEData>');
     
-    jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
+    if (deviceType === 'ring' || deviceType === 'cam') {
+        jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
+    }
     
     $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check text-success');
 
@@ -879,6 +901,9 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                    '<li>Disabled APE on Chimes</li>',
+                    '<li>Disabled Temperature Warning on Stick Up Cams until temperature reading in Report Summary is in a valid format</li>',
+                    '<li>Go Button should now open a new tab/window</li>',
                     '<li>Changed APE interface elements to purple to distinguish from standard elements</li>',
                     '<li>Added temperature to event summary table</li>',
                     '<li>Added temperature to info dump function</li>',
@@ -892,7 +917,7 @@ $(document).ready(function() {
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.8</dd>',
+                '<dd>0.9.8.1</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -932,7 +957,7 @@ function APERender() {
             $('[data-title="\'Spree link\'"]').html(link);*/
             pingSpree = 0;
         }
-        if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0) {
+        if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0 && window.location.href.indexOf("chimes") == -1) {
             console.log('Found Reports! Generating Battery Report Button!');
             $('#reports_resume .panel-title').append('&nbsp;<div class="btn-group" id="ReportButton"><button type="button" class="btn btn-ape btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button><ul class="dropdown-menu"><li><a id="BatteryReport">Generate Battery Report</a></li><li><a id="RSSIReport">Generate RSSI Report</a></li><li><a id="StreamReport">Generate Stream Report</a></li><li><a id="APETimeline">Generate Timeline (Last Update)</a></li><li><a id="APETimelineBattery">Generate Timeline (Battery)</a></li><li><a id="APETimelineStartup">Generate Timeline (Start Up)</a></li><li role="separator" class="divider"></li><li><a id="APESummaryToggle">Switch to Default</a></li><li><a id="APEDumpButton">Dump Information</a></li></ul></div>');
             $('#ReportButton').parent().prepend('<div id="APEcontainer"></div>');
@@ -956,7 +981,8 @@ function APERender() {
             if ( $('.doorbotKMID .doorbotProduct p').text() == 'Doorbell' ) { $('.doorbotKMID .doorbotProduct p').text('Ring Video Doorbell'); };
             $('.doorbotdetails h5').css('font-weight', '700');
             var coordinates = $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().text().replace('coordinates', '').replace('Latitude: ', '').replace('Longitude: ', ',').trim().replace('\n', '').replace(/ /g, '');
-            $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().parent().append('<a class="btn btn-ape APELocationGoButton" href="https://www.google.com/search?q='+coordinates+'">Go <i class="fa fa-angle-double-right"></i></a>');
+            $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
+            $('.APELocationGoButton').on ( 'click' , function() { window.open('https://www.google.com/search?q='+coordinates); } );
             pingReports = 0;
                
         }
@@ -965,5 +991,3 @@ function APERender() {
         }
     }, 1000);
 }
-
-
