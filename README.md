@@ -3,6 +3,24 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.9.8.2
+
+Enabled Temperature Warnings on Stick Up Cams
+
+Added extra data for QA console dump
+
+Added Multilevel menu support
+
+i2c errors now pulse
+
+v0.9.8.1
+
+Disabled APE on Chimes
+
+Disabled Temperature Warning on Stick Up Cams until temperature reading in Report Summary is in a valid format
+
+Go Button should now open a new tab/window
+
 v0.9.8
 
 Changed APE interface elements to purple to distinguish from standard elements
