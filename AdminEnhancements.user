@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.8.2
+// @version      0.9.9
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,11 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.9
+Added Temperature & Battery Graph
+Removed i2c error from Stick Up Cam summaries
+Cleaned up Reports Menu
+New Information Dump Interface for QA
 v0.9.8.2
 Enabled Temperature Warnings on Stick Up Cams
 Added extra data for QA console dump
@@ -32,37 +37,6 @@ Added temperature to info dump function
 Added go button to see location on google maps
 Added temperature warning button
 Added Google Material Design Icons
-v0.9.6
-Fixed issue with time difference calculation
-Fixed issue with highcharts update
-v0.9.5
-Added Battery Timeline
-Added Startup Timeline
-Added Startup hover button
-Updated Font Awesome to 4.5
-v0.9.3
-Corrected conflict with Chime Firmware Audios
-Added visjs for timeline
-Fully clears innerHTML of #APEcontainer before drawing a new graph or timeline
-Added timeline of reports with label of time since last report
-v0.9.2
-Corrected RSSI Graph Flow
-Fixed color coding on Chime Reports
-v0.9.1
-Cleaned up some custom css
-Summary Table now has a border-radius
-Took over event coloring
-Added toggle button for Color Legend
-Added Color Legend above reports table
-Product field now states "Ring Video Doorbell" instead of "Doorbell"
-Made sub-headers in General Details easier to read
-v0.9
-Re-corrected graph flow
-Removed hardware version from Report Summary
-App firmware version now shows by default
-Added battery information to data dump (Nolan)
-Condensed report buttons into one dropdown
-Reports now generate within the Reports Resume div
 
 For full change log, please see: https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/README.md
 */
@@ -109,6 +83,8 @@ GM_addStyle('#APEStatus-parent {padding-left: 5px;}');
 GM_addStyle('.btn-ape {background-color: purple; color: white; border: 2px solid black;}');
 GM_addStyle('.btn-ape:hover, .btn-ape:focus {color: white !important;}');
 GM_addStyle('.APELocationGoButton {top: 132px !important;}');
+GM_addStyle('#APEDumpModal {position: relative;border: 2px solid purple;border-radius: 4px; background: white; margin: 0 10% 80px 10%; padding: 10px;}');
+GM_addStyle('#APEDumpFields {width: 100%;}');
 
 /* Icon pulse */
 GM_addStyle('.fa-pulse {display: inline-block;-moz-animation: pulse 2s infinite linear;-o-animation: pulse 2s infinite linear;-webkit-animation: pulse 2s infinite linear;animation: pulse 2s infinite linear;}');
@@ -216,6 +192,10 @@ function highlightReports (jNode) {
     } else {
         IRCutFilterOn = "Off";
     }
+    
+    if (deviceType == 'cam' && i2cValue == '4') {
+        i2cValue = 0;
+    }
         
     buttonTooltip = [
         '&nbsp;<a class="btn btn-xs btn-ape APESummaryButton">Summary<span>',
@@ -290,66 +270,44 @@ function highlightReports (jNode) {
 };
 
 function dumpSummaryReports() {
+    
+    var _,
+        __,
+        search,
+        output = [];
+    
+    _ = $('#APEDumpFields').val().split(",");
+    
+    $('.status_date.ng-binding').parent().each ( function ( index, element ){
+        
+        output[index] = {};
+        
+        self = this;
+        
+       $.each(_,function(__, search) {
+       
+           if(search=="date") {
+               var date = $(self).find('.status_date.ng-binding').text().trim();
+               output[index][search] = date.substring(0, date.indexOf('\n'));
+           } else {
+       
+               output[index][search] = $(self).find('.key.ng-binding').filter(function() {return $(this).text() === search;}).parent().find(':nth-child(2)').html();
+               
+           }
+       });
+        
+    });
+    
     console.log('--- 💩 ---');
-    var output = [];
-    $('.APESummaryButton').find('table').each( function( index, element ){
-        var keys = [],
-            values = [];
-        $(this).find('tr').find(':nth-child(odd)').each( function( index, element ) {
-            keys.push($(this).text());
-        });
-        $(this).find('tr').find(':nth-child(even)').each( function( index, element ) {
-            values.push($(this).text());
-        });
-        
-        var result = values.reduce(function(result, field, index) {
-                result[keys[index]] = field;
-                return result;
-            }, {});
-        
-        output[index] = [result];
-        
-    });
     console.log(JSON.stringify(output));
     
-    console.log('--- Battery 💩 ---');
-    output = [];
-
-    $('.status_date.ng-binding').parent().each ( function ( index, element ){
-        
-        var date = $(this).find('.status_date.ng-binding').text().trim();
-        date = date.substring(0, date.indexOf('\n'));
-        
-        var battery = $(this).find('.key.ng-binding:contains("battery_percentage")').parent().find(':nth-child(2)').html(),
-            voltage = $(this).find('.key.ng-binding:contains("battery_voltage")').parent().find(':nth-child(2)').html(),
-            ac_power = $(this).find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
-            temp = $(this).find('.key.ng-binding').filter(function() {return $(this).text() === "temp";}).parent().find(':nth-child(2)').html();
-        
-        output[index] = {date, ac_power, battery, voltage, temp};
-    });
-    
-    console.log(JSON.stringify(output));
-    
-    console.log('--- Time 💩 ---');
-    output = [];
-
-    $('.status_date.ng-binding').parent().each ( function ( index, element ){
-        
-        var date = $(this).find('.status_date.ng-binding').text().trim();
-        date = date.substring(0, date.indexOf('\n'));
-        
-        var sip_connect_time = $(this).find('.key.ng-binding:contains("sip_connect_time")').parent().find(':nth-child(2)').html(),
-            ding_api_response_time = $(this).find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
-            start_video_time = $(this).find('.key.ng-binding:contains("start_video_time")').parent().find(':nth-child(2)').html(),
-            motionTimeLow = $(this).find('.key.ng-binding:contains("motionTimeLow")').parent().find(':nth-child(2)').html(),
-            motionTimeHigh = $(this).find('.key.ng-binding:contains("motionTimeHigh")').parent().find(':nth-child(2)').html();
-        
-        output[index] = {'date': date, 'sip_connect_time': sip_connect_time, 'ding_api_response_time': ding_api_response_time, 'start_video_time': start_video_time, 'motionTimeLow': motionTimeLow, 'motionTimeHigh': motionTimeHigh};
-    });
-    
-    console.log(JSON.stringify(output));
+    $('#APEDumpFields').val("");
 
 };
+
+function toggleDumpMenu() {
+    $('#APEDumpModal').toggleClass('hidden');
+}
 
 // Converts null values to '---' for display
 function nullConvert(value) {
@@ -927,10 +885,104 @@ function buildStreamReport () {
     });
 };
 
+// Builds Temperature & Battery Report using High Charts Library
+function buildTemperatureBatteryReport () {
+    
+    $('#APEcontainer').html('');
+    
+    $('#APEcontainer').highcharts({
+        chart: {
+            type: 'line',
+            height: 400
+        },
+        title: {
+            text: 'Temperature & Battery Report'
+        },
+        subtitle: {
+            text: ''
+        },
+        xAxis: {
+            title: {
+                text: 'Reports (Oldest -> Newest)'
+            }
+        },
+        yAxis: {
+            title: {
+                text: 'Reading'
+            },
+            min: -20,
+            max: 130
+        },
+        tooltip: {
+            enabled: false,
+		},
+        plotOptions: {
+            line: {
+                dataLabels: {
+                    enabled: true
+                },
+                enableMouseTracking: true
+            },
+            series: {
+                events: {
+                    click: function(event) {
+                        
+                        //var selectedEvent = $('.key.ng-binding:contains("end_stream_profile")').reverse().eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                        
+                    }
+                }
+            }
+        },
+        series: [{
+            color: 'black',     
+            name: 'Unit Battery',
+            data: (function () {
+                var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
+                    batteryReport,
+                    batteryValue,
+                    data = [];
+                for (var key in batteryData) {
+                    if (batteryData.hasOwnProperty(key)) {
+                        batteryReport = batteryData.eq(key);
+                        batteryValue = batteryReport.find(':nth-child(2)').html();
+                        if (batteryValue != null) {
+                            data.unshift(parseInt(batteryValue));
+                        }
+                    }
+                }
+                
+                return data;
+            }())
+			
+				}, {
+			color: 'orange',	
+			name: 'Temperature Reading',
+            data: (function () {
+                var temperatureData = $('.key.ng-binding').filter(function() {return $(this).text() === "temp";}).parent(),
+                    temperatureReport,
+                    temperatureValue,
+                    temp,
+                    data = [];
+                for (var key in temperatureData) {
+                    if (temperatureData.hasOwnProperty(key)) {
+                        temperatureReport = temperatureData.eq(key);
+                        temp = temperatureReport.find(':nth-child(2)').html();
+                        if (temp != null) {
+                            temperatureValue = temp.replace(/\(.*?\)/, '').replace(' F ', '');
+                            data.unshift(parseInt(temperatureValue));
+                        }
+                    }
+                }
+                return data;
+            }())
+        }]
+    });
+};
+
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-bug"></i></button></li>');
+    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-flask"></i></button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
@@ -942,6 +994,10 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
+                    '<li>Added Temperature & Battery Graph</li>',
+                    '<li>Removed i2c error from Stick Up Cam summaries</li>',
+                    '<li>Cleaned up Reports Menu</li>',
+                    '<li>New Information Dump Interface for QA</li>',
                     '<li>Enabled Temperature Warnings on Stick Up Cams</li>',
                     '<li>i2c errors now pulse</li>',
                     '<li>Redesigned Reports Menu</li>',
@@ -960,7 +1016,7 @@ $(document).ready(function() {
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.8.2</dd>',
+                '<dd>0.9.9</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -970,6 +1026,19 @@ $(document).ready(function() {
                 ];
                 $('.mainpanel').append(APEModal.join(''));
                 $('#APENav').addClass('active');
+                APEModalDump = [
+                '<div class="hidden" id="APEDumpModal">',
+                    '<h3>Please enter the exact fields, sperated by commas, that you want dumped:</h3>',
+                    '<div class="input-group">',
+                        '<input type="text" class="form-control" id="APEDumpFields" placeholder="item1,item2,item3,...">',
+                            '<span class="input-group-btn">',
+                                '<button class="btn btn-default" type="button" id="APEDumpButton"><i class="fa fa-download"></i></button>',
+                            '</span>',
+                        '</input>',
+                    '</div>',
+                '</div>'
+                ];
+                $('#reports_resume .panel-title').prepend(APEModalDump.join(''));
 });
 
 // Checks if URL changes and if APE Renderer needs to be enabled again
@@ -1011,19 +1080,20 @@ function APERender() {
                                     '<li><a id="BatteryReport">Generate Battery Report</a></li>',
                                     '<li><a id="RSSIReport">Generate RSSI Report</a></li>',
                                     '<li><a id="StreamReport">Generate Stream Report</a></li>',
+                                    '<li><a id="TemperatureBatteryReport">Generate Temperature & Battery Report</a></li>',
                                 '</ul>',
                             '</li>',
                             '<li class="dropdown-submenu">',
                             '<a tabindex="-1" href="#">Timelines</a>',
                                 '<ul class="dropdown-menu">',
-                                    '<li><a id="APETimeline">Generate Timeline (Last Update)</a></li>',
-                                    '<li><a id="APETimelineBattery">Generate Timeline (Battery)</a></li>',
-                                    '<li><a id="APETimelineStartup">Generate Timeline (Start Up)</a></li>',
+                                    '<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
+                                    '<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
+                                    '<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
                                 '</ul>',
                             '</li>',
-                            '<li role="separator" class="divider"></li>',
+                            '<li><a id="APEDumpMenuToggle">Toggle Dump Menu</a></li>',
+                              '<li role="separator" class="divider"></li>',
                             '<li><a id="APESummaryToggle">Switch to Default</a></li>',
-                            '<li><a id="APEDumpButton">Dump Information</a></li>',
                         '</ul>',
                     '</div>'
                 ];
@@ -1032,12 +1102,14 @@ function APERender() {
             $('#BatteryReport').on( "click", buildBatteryReport );
             $('#RSSIReport').on( "click", buildRSSIReport );
             $('#StreamReport').on( 'click', buildStreamReport );
+            $('#TemperatureBatteryReport').on( 'click', buildTemperatureBatteryReport );
             $('#APETimeline').on( 'click', buildTimeline );
             $('#APETimelineBattery').on( 'click', buildTimelineBattery );
             $('#APETimelineStartup').on( 'click', buildTimelineStartup );
             // Add report button toggle
             $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
             $('#APEDumpButton').on ( 'click', dumpSummaryReports );
+            $('#APEDumpMenuToggle').on ( 'click', toggleDumpMenu );
             // Remove buttons for broken reports
             $('#reports_resume').find("p:first").addClass('hidden defaultReportButtons');
             // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
