@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.9a
+// @version      0.9.10
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,7 +16,7 @@
 // ==/UserScript==
 
 /* Change Log
-v0.9.9a
+v0.9.10
 Changed url based device detection for new urls in Admin Panel
 v0.9.9
 Added Temperature & Battery Graph
@@ -87,6 +87,9 @@ GM_addStyle('.btn-ape:hover, .btn-ape:focus {color: white !important;}');
 GM_addStyle('.APELocationGoButton {top: 132px !important;}');
 GM_addStyle('#APEDumpModal {position: relative;border: 2px solid purple;border-radius: 4px; background: white; margin: 0 10% 80px 10%; padding: 10px;}');
 GM_addStyle('#APEDumpFields {width: 100%;}');
+
+GM_addStyle('#APEInstallRequest label {font-size: 12px;}');
+GM_addStyle('#APEInstallRequestToggle {float:right;}');
 
 /* Icon pulse */
 GM_addStyle('.fa-pulse {display: inline-block;-moz-animation: pulse 2s infinite linear;-o-animation: pulse 2s infinite linear;-webkit-animation: pulse 2s infinite linear;animation: pulse 2s infinite linear;}');
@@ -289,13 +292,16 @@ function dumpSummaryReports() {
        $.each(_,function(__, search) {
        
            if(search=="date") {
-               var date = $(self).find('.status_date.ng-binding').text().trim();
-               output[index][search] = date.substring(0, date.indexOf('\n'));
-           } else {
-       
-               output[index][search] = $(self).find('.key.ng-binding').filter(function() {return $(this).text() === search;}).parent().find(':nth-child(2)').html();
-               
-           }
+               var date = $(self).find('.status_date.ng-binding').text().trim();
+               output[index][search] = date.substring(0, date.indexOf('\n'));
+           } else if (search=="context"){
+               output[index][search] = $(self).find('.context.ng-binding').text().trim();
+           } else if (search=="duration"){             
+               output[index][search] = $(self).find('#reports_resume > div.table-responsive.dashboard-datatable.cf.ng-scope > table > tbody > tr:nth-child(4) > td:nth-child(3) > label').text().trim();
+           } else {
+               output[index][search] = $(self).find('.key.ng-binding').filter(function() {return $(this).text() === search;}).parent().find(':nth-child(2)').html();
+               
+           }
        });
         
     });
@@ -1058,6 +1064,7 @@ function APERender() {
     var pingCheck = 0,
         pingSpree = 1,
         pingReports = 1,
+        pingCustomer = 1,
         APEModal = [];
     var checkExist = setInterval(function() {
         console.log('Ping!');
@@ -1131,7 +1138,60 @@ function APERender() {
         if (pingCheck > 10) {
             clearInterval(checkExist);
         }
+        if (window.location.href.indexOf("customers") !== -1 && pingCustomer == 1 && $('#APEInstallRequest').length == 0) {
+            buildInstallRequest();
+            pingCustomer = 0;
+        }
     }, 1000);
 }
 
+function buildInstallRequest() {
+    
+    var Modal = [];
+    
+    Modal = [
+'<div class="modal fade" tabindex="-1" role="dialog" id="APEInstallRequest">',
+  '<div class="modal-dialog">',
+    '<div class="modal-content">',
+      '<div class="modal-header">',
+        '<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>',
+        '<h4 class="modal-title">Device Installation Request</h4>',
+      '</div>',
+      '<div class="modal-body">',
+        
+'<div class="container-fluid"> <div class="row"> <div class="col-md-10 col-sm-10 col-xs-12"> <form> <div class="form-group "> <label class="control-label requiredField" for="Product"> Product <span class="asteriskField"> * </span> </label> <select class="select form-control" id="InsReq_Product" name="Product"> <option value="Ring Video Doorbell"> Ring Video Doorbell </option> <option value="Ring Video Doorbell Pro"> Ring Video Doorbell Pro </option> </select> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerName"> Full Name <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerName" name="CustomerName" placeholder="Full Name" type="text"> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerAddress"> Street Address <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerAddress" name="CustomerAddress" placeholder="Street Address" type="text"> </div><div class="form-group "> <label class="control-label " for="CustomerUnitNumber"> Unit/Apt Number </label> <input class="form-control" id="InsReq_CustomerUnitNumber" name="CustomerUnitNumber" placeholder="Unit #" type="text"> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerCity"> City <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerCity" name="CustomerCity" placeholder="City" type="text"> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerState"> State <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerState" name="CustomerState" placeholder="State" type="text"> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerZipCode"> Zip Code <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerZipCode" name="CustomerZipCode" placeholder="Zip Code" type="text"> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerPhone"> Telephone Number <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerPhone" name="CustomerPhone" placeholder="(xxx) xxx-xxxx" type="text"> </div><div class="form-group "> <label class="control-label requiredField" for="CustomerEmail"> Email <span class="asteriskField"> * </span> </label> <input class="form-control" id="InsReq_CustomerEmail" name="CustomerEmail" placeholder="Email" type="text"> </div><div class="form-group "> <label class="control-label " for="CustomerNotes"> Notes </label> <textarea class="form-control" cols="40" id="InsReq_CustomerNotes" name="CustomerNotes" placeholder="Notes" rows="10"></textarea> </div><input type="hidden" name="agent" id="InsReq_RequestingAgent" value="'+$('button.btn.btn-default.dropdown-toggle.loggeduser.ng-binding').text().trim()+'"> <div class="form-group"> <div> <button class="btn btn-primary " data-dismiss="modal" id="APEInstallRequestFormButton"> Submit </button> </div></div></form> </div></div></div></div></div>',        
+      '</div>',
+    '</div>',
+  '</div>',
+'</div>',    
+        ];
+    // Hiding Button Until August Switch On
+    //$('#access_resume > form h1').append('<button type="button" class="btn btn-ape" data-toggle="modal" data-target="#APEInstallRequest" id="APEInstallRequestToggle">Installation Request</button>').append(Modal.join(''));
+    $('#APEInstallRequestFormButton').on( 'click', function(event) { 
+    
+        event.preventDefault();
+        
+        
+        $.ajax({
+            url: '//formspree.io/chris@ring.com', 
+            method: 'POST',
+            data: {
+                Requesting_Agent: $('#InsReq_RequestingAgent').val(),
+                Product: $('#InsReq_Product').val(),
+                Full_Name: $('#InsReq_CustomerName').val(),
+                Address: $('#InsReq_CustomerAddress').val() + ' ' + $('#InsReq_CustomerUnitNumber').val(),
+                City: $('#InsReq_CustomerCity').val(),
+                State: $('#InsReq_CustomerState').val(),
+                ZipCode: $('#InsReq_CustomerZipCode').val(),
+                Phone_Number: $('#InsReq_CustomerPhone').val(),
+                Email: $('#InsReq_CustomerEmail').val(),
+                Notes: $('#InsReq_CustomerNotes').val()
+                
+            },
+            dataType: 'json'
+        });
+        
+    });
+
+}
 
