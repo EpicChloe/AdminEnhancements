@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.9
+// @version      0.9.9a
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.9a
+Changed url based device detection for new urls in Admin Panel
 v0.9.9
 Added Temperature & Battery Graph
 Removed i2c error from Stick Up Cam summaries
@@ -138,7 +140,7 @@ function highlightReports (jNode) {
     
     // Find Device Type
     
-    if(window.location.href.indexOf("doorbots") > -1) {
+    if(window.location.href.indexOf("doorbot") > -1) {
        deviceType = 'ring';
     }
     
@@ -146,7 +148,7 @@ function highlightReports (jNode) {
        deviceType = 'cam';
     }
     
-    if(window.location.href.indexOf("chimes") > -1) {
+    if(window.location.href.indexOf("chime") > -1) {
        deviceType = 'chime';
     }
     
