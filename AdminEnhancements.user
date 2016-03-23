@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.10
+// @version      0.9.12
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.12
+Hiding default report buttons
 v0.9.10
 Changed url based device detection for new urls in Admin Panel
 v0.9.9
@@ -1024,7 +1026,7 @@ $(document).ready(function() {
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.9</dd>',
+                '<dd>0.9.12</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -1120,7 +1122,7 @@ function APERender() {
             $('#APEDumpButton').on ( 'click', dumpSummaryReports );
             $('#APEDumpMenuToggle').on ( 'click', toggleDumpMenu );
             // Remove buttons for broken reports
-            $('#reports_resume').find("p:first").addClass('hidden defaultReportButtons');
+            $('#reports_resume').find("div:nth-child(5)").addClass('hidden defaultReportButtons');
             // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
             $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
