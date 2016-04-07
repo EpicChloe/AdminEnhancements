@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.12
+// @version      0.9.14
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.14
+Label Snooze Profiles
 v0.9.12
 Hiding default report buttons
 v0.9.10
@@ -271,52 +273,68 @@ function highlightReports (jNode) {
     if (deviceType === 'ring' || deviceType === 'cam') {
         jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
     }
-    
+
     $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check text-success');
 
 };
 
 function dumpSummaryReports() {
-    
+
     var _,
         __,
         search,
         output = [];
-    
+
     _ = $('#APEDumpFields').val().split(",");
-    
+
     $('.status_date.ng-binding').parent().each ( function ( index, element ){
-        
+
         output[index] = {};
-        
+
         self = this;
-        
+
        $.each(_,function(__, search) {
-       
+
            if(search=="date") {
                var date = $(self).find('.status_date.ng-binding').text().trim();
                output[index][search] = date.substring(0, date.indexOf('\n'));
            } else if (search=="context"){
                output[index][search] = $(self).find('.context.ng-binding').text().trim();
-           } else if (search=="duration"){             
+           } else if (search=="duration"){
                output[index][search] = $(self).find('#reports_resume > div.table-responsive.dashboard-datatable.cf.ng-scope > table > tbody > tr:nth-child(4) > td:nth-child(3) > label').text().trim();
            } else {
                output[index][search] = $(self).find('.key.ng-binding').filter(function() {return $(this).text() === search;}).parent().find(':nth-child(2)').html();
-               
+
            }
        });
-        
+
     });
-    
+
     console.log('--- 💩 ---');
     console.log(JSON.stringify(output));
-    
+
     $('#APEDumpFields').val("");
 
 };
 
 function toggleDumpMenu() {
     $('#APEDumpModal').toggleClass('hidden');
+}
+
+function labelSnooze() {
+    var snoozeVal = $('#settings > div:nth-child(3) > div > div:nth-child(3) > input').val();
+    var label = '';
+    if (snoozeVal == '0,0,0') {
+            label = "Frequent";
+    } else if (snoozeVal == '1,5,15') {
+            label = "Standard";
+    } else if (snoozeVal == '2,10,30') {
+            label = "Light";
+    } else {
+            label = "Custom";
+    }
+    $('#settings > div:nth-child(3) > div > div:nth-child(3) > h5').append(' - <strong>' + label + '<strong>');
+    
 }
 
 // Converts null values to '---' for display
@@ -897,9 +915,9 @@ function buildStreamReport () {
 
 // Builds Temperature & Battery Report using High Charts Library
 function buildTemperatureBatteryReport () {
-    
+
     $('#APEcontainer').html('');
-    
+
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line',
@@ -944,7 +962,7 @@ function buildTemperatureBatteryReport () {
             }
         },
         series: [{
-            color: 'black',     
+            color: 'black',
             name: 'Unit Battery',
             data: (function () {
                 var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
@@ -1130,6 +1148,7 @@ function APERender() {
             $('#reports_resume_legend').on ( 'click', toggleLegend );
             // QoL Changes
             if ( $('.doorbotKMID .doorbotProduct p').text() == 'Doorbell' ) { $('.doorbotKMID .doorbotProduct p').text('Ring Video Doorbell'); };
+            labelSnooze();
             $('.doorbotdetails h5').css('font-weight', '700');
             var coordinates = $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().text().replace('coordinates', '').replace('Latitude: ', '').replace('Longitude: ', ',').trim().replace('\n', '').replace(/ /g, '');
             $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
