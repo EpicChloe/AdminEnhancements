@@ -6,7 +6,7 @@
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js
-// @require      https://gist.github.com/raw/2625891/waitForKeyElements.js
+// @require      https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/waitForKeyElements.js
 // @require      http://code.highcharts.com/highcharts.js
 // @require      http://code.highcharts.com/modules/exporting.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js
@@ -746,4 +746,172 @@ For full change log, please see: https://raw.githubusercontent.com/EpicChloe/Adm
         });
     };
 
+    APE.namespace(APE.display);
+    
+    APE.display.createModals = function() {
+        $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-flask"></i></button></li>');
+        $('#APEStatus').on('click', function() {
+            $('#APEInformationModal').toggleClass('hidden');
+        });
+        var APEDetailsButton = 0;
+        var APEModal = [
+            '<div class="APEModal hidden" id="APEInformationModal">',
+            '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
+            '<dl class="dl-horizontal">',
+            '<dt>Version 0.9.*</dt>',
+            '<dd>',
+            '<ul>',
+            '<li>Added Temperature & Battery Graph</li>',
+            '<li>Removed i2c error from Stick Up Cam summaries</li>',
+            '<li>Cleaned up Reports Menu</li>',
+            '<li>New Information Dump Interface for QA</li>',
+            '<li>Enabled Temperature Warnings on Stick Up Cams</li>',
+            '<li>i2c errors now pulse</li>',
+            '<li>Redesigned Reports Menu</li>',
+            '<li>Disabled APE on Chimes</li>',
+            '<li>Go Button should now open a new tab/window</li>',
+            '<li>Changed APE interface elements to purple to distinguish from standard elements</li>',
+            '<li>Added temperature to event summary table</li>',
+            '<li>Added temperature to info dump function</li>',
+            '<li>Added go button to see location on google maps</li>',
+            '<li>Added temperature warning button</li>',
+            '<li>Fixed issue with time difference calculation</li>',
+            '<li>Added Battery Timeline</li>',
+            '<li>Added Startup Timeline</li>',
+            '<li>Added Startup hover button</li>',
+            '<li>Corrected conflict with Chime Firmware Audios</li>',
+            '</ul>',
+            '</dd>',
+            '<dt>Version</dt>',
+            '<dd>0.9.12</dd>',
+            '<dt>By</dt>',
+            '<dd>Chris Pittelko - chris@ring.com</dd>',
+            '<dt>Link</dt>',
+            '<dd>https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user</dd>',
+            '</dl>',
+            '</div>'
+        ];
+        $('.mainpanel').append(APEModal.join(''));
+        $('#APENav').addClass('active');
+        var APEModalDump = [
+            '<div class="hidden" id="APEDumpModal">',
+            '<h3>Please enter the exact fields, sperated by commas, that you want dumped:</h3>',
+            '<div class="input-group">',
+            '<input type="text" class="form-control" id="APEDumpFields" placeholder="item1,item2,item3,...">',
+            '<span class="input-group-btn">',
+            '<button class="btn btn-default" type="button" id="APEDumpButton"><i class="fa fa-download"></i></button>',
+            '</span>',
+            '</input>',
+            '</div>',
+            '</div>'
+        ];
+        $('#reports_resume .panel-title').prepend(APEModalDump.join(''));
+    };
+    
+    
+    APE.display.render = function() {
+        var pingCheck = 0,
+            pingSpree = 1,
+            pingReports = 1,
+            pingCustomer = 1,
+            APEModal = [];
+        var checkExist = setInterval(function() {
+            console.log('Ping!');
+            pingCheck ++;
+            if ($('[data-title="\'Spree link\'"]').length && pingSpree) {
+                // Bug with link fixed in default Admin Panel
+                /*console.log("Found Spree Link! Correcting Link!");
+                 var link = $('[data-title="\'Spree link\'"]').html();
+                 link = link.trim().replace('https://', '');
+                 console.log(link);
+                 $('[data-title="\'Spree link\'"]').html(link);*/
+                pingSpree = 0;
+            }
+            if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0 && window.location.href.indexOf("chimes") == -1) {
+                console.log('Found Reports! Generating Battery Report Button!');
+                var APE_ddMenu = ['&nbsp;<div class="btn-group" id="ReportButton">',
+                    '<button type="button" class="btn btn-ape btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Reports   <span class="caret"></span></button>',
+                    '<ul class="dropdown-menu">',
+                    '<li class="dropdown-submenu">',
+                    '<a tabindex="-1" href="#">Graphs</i></a>',
+                    '<ul class="dropdown-menu">',
+                    '<li><a id="BatteryReport">Generate Battery Report</a></li>',
+                    '<li><a id="RSSIReport">Generate RSSI Report</a></li>',
+                    '<li><a id="StreamReport">Generate Stream Report</a></li>',
+                    '<li><a id="TemperatureBatteryReport">Generate Temperature & Battery Report</a></li>',
+                    '</ul>',
+                    '</li>',
+                    '<li class="dropdown-submenu">',
+                    '<a tabindex="-1" href="#">Timelines</a>',
+                    '<ul class="dropdown-menu">',
+                    '<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
+                    '<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
+                    '<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
+                    '</ul>',
+                    '</li>',
+                    '<li><a id="APEDumpMenuToggle">Toggle Dump Menu</a></li>',
+                    '<li role="separator" class="divider"></li>',
+                    '<li><a id="APESummaryToggle">Switch to Default</a></li>',
+                    '</ul>',
+                    '</div>'
+                ];
+                $('#reports_resume .panel-title').append(APE_ddMenu.join(''));
+                $('#ReportButton').parent().prepend('<div id="APEcontainer"></div>');
+                $('#BatteryReport').on( "click", APE.charts.buildBatteryReport );
+                $('#RSSIReport').on( "click", APE.charts.buildRSSIReport );
+                $('#StreamReport').on( 'click', APE.charts.buildStreamReport );
+                $('#TemperatureBatteryReport').on( 'click', APE.charts.buildTemperatureBatteryReport );
+                $('#APETimeline').on( 'click', APE.charts.buildTimeline );
+                $('#APETimelineBattery').on( 'click', APE.charts.buildTimelineBattery );
+                $('#APETimelineStartup').on( 'click', APE.charts.buildTimelineStartup );
+                // Add report button toggle
+                $('#APESummaryToggle').on ( 'click', APE.helper.toggleSummaryButtons );
+                $('#APEDumpButton').on ( 'click', APE.helper.dumpSummaryReports );
+                $('#APEDumpMenuToggle').on ( 'click', APE.helper.toggleDumpMenu );
+                // Remove buttons for broken reports
+                $('#reports_resume').find("div:nth-child(5)").addClass('hidden defaultReportButtons');
+                // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
+                $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
+                //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
+                $('#reports_resume th:first').css('width', '26px').html('<button id="reports_resume_legend"><i class="fa fa-info-circle fa-align-center"></i></button>').parent().parent().parent().parent().prepend('<div id="APEColorLegend" class="hidden">&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#f2dede;"></i>&nbsp;MSP430 Error&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#ffc370;"></i>&nbsp;Low Battery(<15%)&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#d9edf7;"></i>&nbsp;OTA/Setup&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#fcf8e3;"></i>&nbsp;RSSI <70</div>');
+                $('#reports_resume_legend').on ( 'click', APE.helper.toggleLegend );
+                // QoL Changes
+                if ( $('.doorbotKMID .doorbotProduct p').text() == 'Doorbell' ) { $('.doorbotKMID .doorbotProduct p').text('Ring Video Doorbell'); };
+                labelSnooze();
+                $('.doorbotdetails h5').css('font-weight', '700');
+                var coordinates = $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().text().replace('coordinates', '').replace('Latitude: ', '').replace('Longitude: ', ',').trim().replace('\n', '').replace(/ /g, '');
+                $('.doorbotMacID h5').filter(function() {return $(this).text() === "coordinates";}).parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
+                $('.APELocationGoButton').on ( 'click' , function() { window.open('https://www.google.com/search?q='+coordinates); } );
+                pingReports = 0;
+
+            }
+            if (pingCheck > 10) {
+                clearInterval(checkExist);
+            }
+            if (window.location.href.indexOf("customers") !== -1 && pingCustomer == 1 && $('#APEInstallRequest').length == 0) {
+                buildInstallRequest();
+                pingCustomer = 0;
+            }
+        }, 1000);
+    };
+    
+    APE.display.init = function() {
+        $(document).ready(function() {
+            APE.display.render();
+            APE.display.createModals();
+        });
+
+        // Checks if URL changes and if APE Renderer needs to be enabled again
+        var oldLocation = location.href;
+        setInterval(function() {
+            if(location.href != oldLocation) {
+                console.log('URL Changed!');
+                APERender();
+                oldLocation = location.href
+            }
+        }, 1000); // check every second
+    };
+
+    APE.display.init();
+    
 })();
