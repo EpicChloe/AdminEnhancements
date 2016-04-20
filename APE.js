@@ -896,7 +896,16 @@ For full change log, please see: https://raw.githubusercontent.com/EpicChloe/Adm
     };
     
     APE.display.init = function() {
+        // Adding updated FontAwesome
+        addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css";');
+        // Adding Stylesheet for visjs
+        addStyleSheet('@import "https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css";');
+        // Adding Google Material Design Icons
+        addStyleSheet('@import "https://fonts.googleapis.com/icon?family=Material+Icons";');
+        // Adding APE css
+        APE.helper.addStyleSheet('@import "https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/r100/APE.css";');
         $(document).ready(function() {
+
             APE.display.render();
             APE.display.createModals();
         });
@@ -913,5 +922,5 @@ For full change log, please see: https://raw.githubusercontent.com/EpicChloe/Adm
     };
 
     APE.display.init();
-    
+
 })();
