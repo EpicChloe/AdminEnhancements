@@ -3,6 +3,42 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.9.16
+
+Added temp conversion for Kelvin and hide warning if temperature is absurd
+
+Hide defualt buttons again!
+
+Hide app firmware version by defualt in report summary to make reports one line again
+
+Fixed Go button
+
+v0.9.15
+
+Updated key external
+
+v0.9.14
+
+Label Snooze Profiles
+
+v0.9.12
+
+Hiding default report buttons
+
+v0.9.10
+
+Changed url based device detection for new urls in Admin Panel
+
+v0.9.9
+
+Added Temperature & Battery Graph
+
+Removed i2c error from Stick Up Cam summaries
+
+Cleaned up Reports Menu
+
+New Information Dump Interface for QA
+
 v0.9.8.2
 
 Enabled Temperature Warnings on Stick Up Cams
