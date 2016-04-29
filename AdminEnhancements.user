@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.16
+// @version      0.9.17
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.17
+Show arrow buttons for report summary
 v0.9.16
 Added temp conversion for Kelvin and hide warning if temperature is absurd
 Hide defualt buttons again!
@@ -1150,7 +1152,7 @@ function APERender() {
             // Remove buttons for broken reports
             $('#reports_resume').find("div:nth-child(5)").addClass('hidden defaultReportButtons');
             // New button location
-            $('#reports_resume > div > div.panel-heading > div').addClass('hidden defaultReportButtons');
+            $('#reports_resume > div > div.panel-heading > div > div:nth-child(1)').addClass('hidden defaultReportButtons');
             // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
             $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
