@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.17
+// @version      0.9.18
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.18
+Updated battery reading on cams
 v0.9.17
 Show arrow buttons for report summary
 v0.9.16
@@ -162,6 +164,7 @@ function highlightReports (jNode) {
     
     if(window.location.href.indexOf("cam") > -1) {
        deviceType = 'cam';
+       batteryValue = jNode.find('.key.ng-binding:contains("batt_percent")').parent().find(':nth-child(2)').html();
     }
     
     if(window.location.href.indexOf("chime") > -1) {
@@ -571,8 +574,17 @@ function buildTimelineBattery() {
     $('#APEcontainer').html('');
     $('#APEcontainer').html('<h3>Timeline (Battery)</h3>');
     
+    
+    var batterySet;
+    
+    if(window.location.href.indexOf("cam") > -1) {
+       batterySet = $('.key.ng-binding:contains("batt_percent")').parent();
+    } else {
+       batterySet = $('.key.ng-binding:contains("battery_percentage")').parent();
+    }
+    
    var container = document.getElementById('APEcontainer');
-  var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
+  var batteryData = batterySet,
                     batteryReport,
                     batteryValue,
                     timeData = $('td.status .key.ng-binding:contains("time")').parent(),
@@ -671,8 +683,12 @@ function buildBatteryReport() {
                 events: {
                     click: function(event) {
                         
-                        var selectedEvent = $('.key.ng-binding:contains("battery_percentage")').reverse().eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
-                       
+                        if(window.location.href.indexOf("cam") > -1) {
+                            var selectedEvent = $('.key.ng-binding:contains("batt_percent")').reverse().eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                        } else {
+                            var selectedEvent = $('.key.ng-binding:contains("battery_percentage")').reverse().eq(event.point.x).parent().parent().parent().parent().css('border', '3px solid #04759f');
+                        }
+
                     }
                 }
             }
@@ -680,7 +696,16 @@ function buildBatteryReport() {
         series: [{
             name: 'Unit Battery',
             data: (function () {
-                var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
+                
+                var batterySet;
+    
+                if(window.location.href.indexOf("cam") > -1) {
+                    batterySet = $('.key.ng-binding:contains("batt_percent")').parent();
+                } else {
+                    batterySet = $('.key.ng-binding:contains("battery_percentage")').parent();
+                }
+                
+                var batteryData = batterySet,
                     batteryReport,
                     batteryValue,
                     data = [];
@@ -978,7 +1003,16 @@ function buildTemperatureBatteryReport () {
             color: 'black',
             name: 'Unit Battery',
             data: (function () {
-                var batteryData = $('.key.ng-binding:contains("battery_percentage")').parent(),
+                
+                var batterySet;
+    
+                if(window.location.href.indexOf("cam") > -1) {
+                    batterySet = $('.key.ng-binding:contains("batt_percent")').parent();
+                } else {
+                    batterySet = $('.key.ng-binding:contains("battery_percentage")').parent();
+                }
+                
+                var batteryData = batterySet,
                     batteryReport,
                     batteryValue,
                     data = [];
