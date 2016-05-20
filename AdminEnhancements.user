@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.22
+// @version      0.9.23
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.23
+Fixed append and prepend locations
 v0.9.22
 Changed most reports to trigger only on certain devices
 Added battery graph for Ring Pro
@@ -195,11 +197,11 @@ function highlightReports (jNode) {
     }
     
     if ( ac_power == 0 && deviceType == 'ring') {
-        jNode.find('.status_date.ng-binding').html('<i class="fa fa-battery-three-quarters"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
+        jNode.find('td.status_date').html('<i class="fa fa-battery-three-quarters"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
     }
     
     if ( ac_power == 1 && deviceType == 'ring') {
-        jNode.find('.status_date.ng-binding').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
+        jNode.find('td.status_date').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
     }
     
     if ( jNode.parents('div#reports_resume').length ) {
@@ -320,7 +322,7 @@ function highlightReports (jNode) {
     buttonTooltip.push('<APEData>' + JSON.stringify(JSONData) + '</APEData>');
     
     if (deviceType === 'ring' || deviceType === 'cam' || deviceType === 'ringPro') {
-        jNode.find('.status_date.ng-binding').append(buttonTooltip.join(''));
+        jNode.find('td.status_date').append(buttonTooltip.join(''));
     }
 
     $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check text-success');
@@ -1154,7 +1156,7 @@ function buildTemperatureBatteryReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-magnet fa-spin" aria-hidden="true"></i></button></li>');
+    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-magnet" aria-hidden="true"></i></button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
