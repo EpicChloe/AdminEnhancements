@@ -197,11 +197,11 @@ function highlightReports (jNode) {
     }
     
     if ( ac_power == 0 && deviceType == 'ring') {
-        jNode.find('td.status_date').html('<i class="fa fa-battery-three-quarters"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
+        jNode.find('td.status_date').html('<i class="fa fa-battery-three-quarters"></i>&nbsp;&nbsp;' + jNode.find('td.status_date').html());
     }
     
     if ( ac_power == 1 && deviceType == 'ring') {
-        jNode.find('td.status_date').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('.status_date.ng-binding').html());
+        jNode.find('td.status_date').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('td.status_date').html());
     }
     
     if ( jNode.parents('div#reports_resume').length ) {
