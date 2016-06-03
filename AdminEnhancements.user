@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.23
+// @version      0.9.28
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -10,12 +10,14 @@
 // @require      http://code.highcharts.com/highcharts.js
 // @require      http://code.highcharts.com/modules/exporting.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js
 // @grant        GM_addStyle
 // @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.9.28
+Fixed highcharts widths
 v0.9.23
 Fixed append and prepend locations
 v0.9.22
@@ -63,7 +65,7 @@ Added Google Material Design Icons
 
 For full change log, please see: https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/README.md
 */
-
+(function() {
 // Color Guide:
 // Red: MSP430 Error
 // Orange: Low Battery (<15%)
@@ -84,7 +86,7 @@ function addStyleSheet(style){
 // Adding updated FontAwesome
 addStyleSheet('@import "https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css";');
 // Adding Stylesheet for visjs
-addStyleSheet('@import "https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css";');
+addStyleSheet('@import "https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.css";');
 // Adding Google Material Design Icons
 addStyleSheet('@import "https://fonts.googleapis.com/icon?family=Material+Icons";');
 // Manual Styles
@@ -179,6 +181,7 @@ function highlightReports (jNode) {
         jNode.find('.key.ng-binding:contains("hw")').parent().remove();
         jNode.find('.key.ng-binding:contains("app")').parent().removeClass('ng-hide');
     }
+    
     
     if(deviceType == 'ringPro') {
         batteryValue = jNode.find('.key.ng-binding:contains("battery_voltage")').parent().find(':nth-child(2)').html();
@@ -373,7 +376,7 @@ function toggleDumpMenu() {
 }
 
 function labelSnooze() {
-    var snoozeVal = $('#settings > div:nth-child(3) > div > div:nth-child(3) > input').val();
+    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div:nth-child(3) > input').val(); }
     var label = '';
     if (snoozeVal == '0,0,0') {
             label = "Frequent";
@@ -384,8 +387,8 @@ function labelSnooze() {
     } else {
             label = "Custom";
     }
-    $('#settings > div:nth-child(3) > div > div:nth-child(3) > h5').append(' - <strong>' + label + '<strong>');
-    
+    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div:nth-child(3) > input').append(' - <strong>' + label + '<strong>') }
+
 }
 
 // Converts null values to '---' for display
@@ -706,7 +709,8 @@ function buildBatteryReport() {
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line',
-            height: 400
+            height: 400,
+            width: $(window).width()-20
         },
         title: {
             text: 'Battery Report'
@@ -818,7 +822,8 @@ function buildRSSIReport() {
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line',
-            height: 400
+            height: 400,
+            width: $(window).width()-20
         },
         title: {
             text: 'RSSI Report'
@@ -921,7 +926,8 @@ function buildStreamReport () {
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line',
-            height: 400
+            height: 400,
+            width: $(window).width()-20
         },
         title: {
             text: 'Stream Profile Report'
@@ -1044,7 +1050,8 @@ function buildTemperatureBatteryReport () {
     $('#APEcontainer').highcharts({
         chart: {
             type: 'line',
-            height: 400
+            height: 400,
+            width: $(window).width()-20
         },
         title: {
             text: 'Temperature & Battery Report'
@@ -1239,14 +1246,14 @@ function APERender() {
                                     '<li><a id="TemperatureBatteryReport">Generate Temperature & Battery Report</a></li>',
                                 '</ul>',
                             '</li>',
-                            '<li class="dropdown-submenu">',
-                            '<a tabindex="-1" href="#">Timelines</a>',
-                                '<ul class="dropdown-menu">',
-                                    '<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
-                                    '<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
-                                    '<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
-                                '</ul>',
-                            '</li>',
+                            //'<li class="dropdown-submenu">',
+                            //'<a tabindex="-1" href="#">Timelines</a>',
+                                //'<ul class="dropdown-menu">',
+                                    //'<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
+                                    //'<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
+                                    //'<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
+                                //'</ul>',
+                            //'</li>',
                             '<li><a id="APEDumpMenuToggle">Toggle Dump Menu</a></li>',
                               '<li role="separator" class="divider"></li>',
                             '<li><a id="APESummaryToggle">Switch to Default</a></li>',
@@ -1283,6 +1290,7 @@ function APERender() {
             var coordinates = $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').text().replace(' | ' , ',');
             $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
             $('.APELocationGoButton').on ( 'click' , function() { window.open('https://www.google.com/search?q='+coordinates); } );
+            $('#reports_resume > div > div.panel-heading > div').removeAttr('style');
             pingReports = 0;
                
         }
@@ -1291,3 +1299,4 @@ function APERender() {
         }
     }, 1000);
 }
+})();
