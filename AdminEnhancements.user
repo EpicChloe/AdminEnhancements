@@ -1169,7 +1169,7 @@ function buildTemperatureBatteryReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-magnet" aria-hidden="true"></i></button></li>');
+    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-fire" aria-hidden="true"></i></button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
@@ -1181,7 +1181,7 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
-                     '<li>Why Is Everything Broken Edition</li>',
+                     '<strong>Why Is Everything Broken Edition</strong>',
                      '<li>Fixed device detection</li>',
                      '<li>Fixed startup time</li>',
                      '<li>Added V3 support</li>',
