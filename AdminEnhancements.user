@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.28
+// @version      0.9.30
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,12 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.30 - Why is everything broken edition
+Fixed device detection
+Fixed startup time
+Added V3 support
+Fixed Snooze Profile Label
+Server settings section is now hidden on load
 v0.9.28
 Fixed highcharts widths
 v0.9.23
@@ -65,7 +71,7 @@ Added Google Material Design Icons
 
 For full change log, please see: https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/README.md
 */
-(function() {
+
 // Color Guide:
 // Red: MSP430 Error
 // Orange: Low Battery (<15%)
@@ -147,12 +153,12 @@ function highlightReports (jNode) {
         buttonTooltip,
         context = jNode.find('.context').text().trim(),
         motionZone = '',
-        wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').html(),
-        L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').html(),
-        DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').html(),
-        API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
-        SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').html(),
-        first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
+        wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').text().trim(),
+        L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').text().trim(),
+        DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').text().trim(),
+        API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').text().trim(),
+        SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').text().trim(),
+        first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').text().trim(),
         connectData = [],
         ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
         JSONData = [],
@@ -162,9 +168,9 @@ function highlightReports (jNode) {
     // Delete Hardware Version From Report
     var deviceType;
     
-    if(window.location.href.indexOf("doorbot") > -1) {
+    if(window.location.href.indexOf("doorbell") > -1) {
        if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
-       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell') { deviceType = 'ring'; }
+       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
        if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
     }
     
@@ -243,7 +249,7 @@ function highlightReports (jNode) {
     }
         
     
-    if (deviceType == 'ring' || deviceType == 'cam') {
+    if ((deviceType == 'ring' || deviceType == 'cam') && context != 'Daily Report') {
     buttonTooltip = [
         '&nbsp;<a class="btn btn-xs btn-ape APESummaryButton">Summary<span>',
         '<table class="table table-bordered APETable">',
@@ -376,7 +382,7 @@ function toggleDumpMenu() {
 }
 
 function labelSnooze() {
-    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div:nth-child(3) > input').val(); }
+    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div > div:nth-child(3) > input').val(); }
     var label = '';
     if (snoozeVal == '0,0,0') {
             label = "Frequent";
@@ -387,7 +393,7 @@ function labelSnooze() {
     } else {
             label = "Custom";
     }
-    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div:nth-child(3) > input').append(' - <strong>' + label + '<strong>') }
+    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div > div:nth-child(3) > h5').append(' - <strong>' + label + '<strong>') }
 
 }
 
@@ -467,9 +473,9 @@ function toggleLegend() {
 function deviceType() {
     var deviceType;
     
-    if(window.location.href.indexOf("doorbot") > -1) {
+    if(window.location.href.indexOf("doorbell") > -1) {
        if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
-       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell') { deviceType = 'ring'; }
+       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
        if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
     }
     
@@ -747,7 +753,7 @@ function buildBatteryReport() {
                         var deviceType;
                         if(window.location.href.indexOf("doorbot") > -1) {
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
-                            if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell') { deviceType = 'ring'; }
+                            if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
                         }
                         if(window.location.href.indexOf("cam") > -1) {
@@ -776,7 +782,7 @@ function buildBatteryReport() {
                 var deviceType;
                         if(window.location.href.indexOf("doorbot") > -1) {
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
-                            if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell') { deviceType = 'ring'; }
+                            if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
                         }
                         if(window.location.href.indexOf("cam") > -1) {
@@ -1100,7 +1106,7 @@ function buildTemperatureBatteryReport () {
                 var deviceType;
                         if(window.location.href.indexOf("doorbot") > -1) {
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
-                            if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell') { deviceType = 'ring'; }
+                            if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
                         }
                         if(window.location.href.indexOf("cam") > -1) {
@@ -1175,11 +1181,16 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
-                    'Get on <i class="fa fa-slack" aria-hidden="true"></i>Slack.',
+                     '<li>Why Is Everything Broken Edition</li>',
+                     '<li>Fixed device detection</li>',
+                     '<li>Fixed startup time</li>',
+                     '<li>Added V3 support</li>',
+                     '<li>Fixed Snooze Profile Label</li>',
+                     '<li>Server settings section is now hidden on load</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>0.9.22</dd>',
+                '<dd>v0.9.30</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -1285,13 +1296,16 @@ function APERender() {
             $('#reports_resume th:first').css('width', '26px').html('<button id="reports_resume_legend"><i class="fa fa-info-circle fa-align-center"></i></button>').parent().parent().parent().parent().prepend('<div id="APEColorLegend" class="hidden">&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#f2dede;"></i>&nbsp;MSP430 Error&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#ffc370;"></i>&nbsp;Low Battery(<15%)&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#d9edf7;"></i>&nbsp;OTA/Setup&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#fcf8e3;"></i>&nbsp;RSSI <70</div>');
             $('#reports_resume_legend').on ( 'click', toggleLegend );
             // QoL Changes
-            labelSnooze();
             $('.doorbotdetails h5').css('font-weight', '700');
             var coordinates = $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').text().replace(' | ' , ',');
             $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
             $('.APELocationGoButton').on ( 'click' , function() { window.open('https://www.google.com/search?q='+coordinates); } );
             $('#reports_resume > div > div.panel-heading > div').removeAttr('style');
             pingReports = 0;
+            setTimeout(function() {
+                labelSnooze();
+                $('.server').hide();
+            }, 2000);
                
         }
         if (pingCheck > 10) {
@@ -1299,4 +1313,4 @@ function APERender() {
         }
     }, 1000);
 }
-})();
+
