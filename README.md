@@ -3,6 +3,50 @@ Ring Admin Enhancements
 
 Change Log:
 
+v0.9.32
+
+Fixed QA Dump
+
+Removed Server Section .hide
+
+Fixed Battery Charts
+
+v0.9.30 - Why is everything broken edition
+
+Fixed device detection
+
+Fixed startup time
+
+Added V3 support
+
+Fixed Snooze Profile Label
+
+Server settings section is now hidden on load
+
+v0.9.28
+
+Fixed highcharts widths
+
+v0.9.23
+
+Fixed append and prepend locations
+
+v0.9.22
+
+Changed most reports to trigger only on certain devices
+
+Added battery graph for Ring Pro
+
+Added battery alert for Ring Pro
+
+v0.9.18
+
+Updated battery reading on cams
+
+v0.9.17
+
+Show arrow buttons for report summary
+
 v0.9.16
 
 Added temp conversion for Kelvin and hide warning if temperature is absurd
