@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.30
+// @version      0.9.32
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -16,6 +16,10 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.32
+Fixed QA Dump
+Removed Server Section .hide
+Fixed Battery Charts
 v0.9.30 - Why is everything broken edition
 Fixed device detection
 Fixed startup time
@@ -175,7 +179,7 @@ function highlightReports (jNode) {
     }
     
     if(window.location.href.indexOf("cam") > -1) {
-       deviceType = 'cam';
+        deviceType = 'cam';
     }
     
     if(window.location.href.indexOf("chime") > -1) {
@@ -238,7 +242,7 @@ function highlightReports (jNode) {
         }
     }
     
-    if (IRCutFilterIR + IRCutFilterVis <= 12 && deviceType == 'ring') {
+    if (IRCutFilterIR + IRCutFilterVis <= 12 && (deviceType == 'ring' || deviceType == 'cam')) {
         IRCutFilterOn = "On";
     } else {
         IRCutFilterOn = "Off";
@@ -347,7 +351,7 @@ function dumpSummaryReports() {
 
     _ = $('#APEDumpFields').val().split(",");
 
-    $('.status_date.ng-binding').parent().each ( function ( index, element ){
+    $('td.status_date').parent().each ( function ( index, element ){
 
         output[index] = {};
 
@@ -780,7 +784,7 @@ function buildBatteryReport() {
                 
                 var batterySet;
                 var deviceType;
-                        if(window.location.href.indexOf("doorbot") > -1) {
+                        if(window.location.href.indexOf("doorbell") > -1) {
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
@@ -793,14 +797,14 @@ function buildBatteryReport() {
                         }
 
                 if(deviceType == 'ringPro') {
-                    batterySet = $('.key.ng-binding:contains("battery_voltage")').parent();
+                    batterySet = 'battery_voltage';
                 } else if(deviceType == 'cam') {
-                    batterySet = $('.key.ng-binding:contains("batt_percent")').parent();
+                    batterySet = 'batt_percent';
                 } else {
-                    batterySet = $('.key.ng-binding:contains("battery_percentage")').parent();
+                    batterySet = 'battery_percentage';
                 }
                 
-                var batteryData = batterySet,
+                var batteryData = $('.key.ng-binding:contains("'+batterySet+'")').parent(),
                     batteryReport,
                     batteryValue,
                     data = [];
@@ -1104,7 +1108,7 @@ function buildTemperatureBatteryReport () {
                 
                 var batterySet;
                 var deviceType;
-                        if(window.location.href.indexOf("doorbot") > -1) {
+                        if(window.location.href.indexOf("doorbell") > -1) {
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
                             if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
@@ -1117,14 +1121,14 @@ function buildTemperatureBatteryReport () {
                         }
     
                 if(deviceType == 'ringPro') {
-                    batterySet = $('.key.ng-binding:contains("battery_voltage")').parent();
+                    batterySet = 'battery_voltage';
                 } else if(deviceType == 'cam') {
-                    batterySet = $('.key.ng-binding:contains("batt_percent")').parent();
+                    batterySet = 'batt_percent';
                 } else {
-                    batterySet = $('.key.ng-binding:contains("battery_percentage")').parent();
+                    batterySet = 'battery_percentage';
                 }
                 
-                var batteryData = batterySet,
+                var batteryData = $('.key.ng-binding:contains("'+batterySet+'")').parent(),
                     batteryReport,
                     batteryValue,
                     data = [];
@@ -1169,7 +1173,7 @@ function buildTemperatureBatteryReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-fire" aria-hidden="true"></i></button></li>');
+    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-code" aria-hidden="true"></i></i></button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
@@ -1181,16 +1185,17 @@ $(document).ready(function() {
                 '<dt>Version 0.9.*</dt>',
                 '<dd>',
                 '<ul>',
-                     '<strong>Why Is Everything Broken Edition</strong>',
+                     '<strong></strong>',
+                     '<li>Fixed QA Dump</li>',
                      '<li>Fixed device detection</li>',
                      '<li>Fixed startup time</li>',
                      '<li>Added V3 support</li>',
                      '<li>Fixed Snooze Profile Label</li>',
-                     '<li>Server settings section is now hidden on load</li>',
+                     '<li>Fixed Battery Charts</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>v0.9.30</dd>',
+                '<dd>v0.9.32</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -1304,7 +1309,6 @@ function APERender() {
             pingReports = 0;
             setTimeout(function() {
                 labelSnooze();
-                $('.server').hide();
             }, 2000);
                
         }
