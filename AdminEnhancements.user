@@ -1,21 +1,24 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.32
+// @version      0.9.9
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
-// @require      https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js
+// @match        https://staging.admin.ring.com/*
 // @require      https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/waitForKeyElements.js
 // @require      http://code.highcharts.com/highcharts.js
 // @require      http://code.highcharts.com/modules/exporting.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/vis/4.16.1/vis.min.js
+// @require      https://raw.githubusercontent.com/EpicChloe/vis/master/dist/vis.min.js
 // @grant        GM_addStyle
 // @updateURL    https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/AdminEnhancements.user
 // ==/UserScript==
 
 /* Change Log
+v0.9.9
+Global disable
+v0.9.5
+Added app_errors to Summary Button for V3
 v0.9.32
 Fixed QA Dump
 Removed Server Section .hide
@@ -26,52 +29,6 @@ Fixed startup time
 Added V3 support
 Fixed Snooze Profile Label
 Server settings section is now hidden on load
-v0.9.28
-Fixed highcharts widths
-v0.9.23
-Fixed append and prepend locations
-v0.9.22
-Changed most reports to trigger only on certain devices
-Added battery graph for Ring Pro
-Added battery alert for Ring Pro
-v0.9.18
-Updated battery reading on cams
-v0.9.17
-Show arrow buttons for report summary
-v0.9.16
-Added temp conversion for Kelvin and hide warning if temperature is absurd
-Hide defualt buttons again!
-Hide app firmware version by defualt in report summary to make reports one line again
-Fixed Go button
-v0.9.15
-Updated key external
-v0.9.14
-Label Snooze Profiles
-v0.9.12
-Hiding default report buttons
-v0.9.10
-Changed url based device detection for new urls in Admin Panel
-v0.9.9
-Added Temperature & Battery Graph
-Removed i2c error from Stick Up Cam summaries
-Cleaned up Reports Menu
-New Information Dump Interface for QA
-v0.9.8.2
-Enabled Temperature Warnings on Stick Up Cams
-Added extra data for QA console dump
-Added Multilevel menu support
-i2c errors now pulse
-v0.9.8.1
-Disabled APE on Chimes
-Disabled Temperature Warning on Stick Up Cams until temperature reading in Report Summary is in a valid format
-Go Button should now open a new tab/window
-v0.9.8
-Changed APE interface elements to purple to distinguish from standard elements
-Added temperature to event summary table
-Added temperature to info dump function
-Added go button to see location on google maps
-Added temperature warning button
-Added Google Material Design Icons
 
 For full change log, please see: https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/README.md
 */
@@ -81,7 +38,7 @@ For full change log, please see: https://raw.githubusercontent.com/EpicChloe/Adm
 // Orange: Low Battery (<15%)
 // Blue: OTA/Setup
 // Yellow: RSSI < -70
-
+/*
 // Add reverse to JQuery
 $.fn.reverse = [].reverse;
 
@@ -89,7 +46,7 @@ $.fn.reverse = [].reverse;
 function addStyleSheet(style){
   var getHead = document.getElementsByTagName("HEAD")[0];
   var cssNode = window.document.createElement( 'style' );
-  var elementStyle= getHead.appendChild(cssNode);
+  var elementStyle = getHead.appendChild(cssNode);
   elementStyle.innerHTML = style;
   return elementStyle;
 }
@@ -125,6 +82,7 @@ GM_addStyle('#APEInstallRequest label {font-size: 12px;}');
 GM_addStyle('#APEInstallRequestToggle {float:right;}');
 
 /* Icon pulse */
+/*
 GM_addStyle('.fa-pulse {display: inline-block;-moz-animation: pulse 2s infinite linear;-o-animation: pulse 2s infinite linear;-webkit-animation: pulse 2s infinite linear;animation: pulse 2s infinite linear;}');
 GM_addStyle('@-webkit-keyframes pulse {0% { opacity: 1; }50% { opacity: 0; }100% { opacity: 1; }}');
 GM_addStyle('@-moz-keyframes pulse {0% { opacity: 1; }50% { opacity: 0; }100% { opacity: 1; }}');
@@ -154,6 +112,7 @@ function highlightReports (jNode) {
         endStream = jNode.find('.key.ng-binding:contains("end_stream_profile")').parent().find(':nth-child(2)').html(),
         streamUp = jNode.find('.key.ng-binding:contains("num_stream_upgrades")').parent().find(':nth-child(2)').html(),
         streamDown = jNode.find('.key.ng-binding:contains("num_stream_downgrades")').parent().find(':nth-child(2)').html(),
+        appErrors = jNode.find('.key.ng-binding:contains("app_errors")').parent().find(':nth-child(2)').html(),
         buttonTooltip,
         context = jNode.find('.context').text().trim(),
         motionZone = '',
@@ -252,6 +211,11 @@ function highlightReports (jNode) {
         i2cValue = 0;
     }
         
+    if ($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') {
+        var appError = '<td>App Errors:</td><td>'+appErrors+'</td>'
+    } else {
+        var appError = '';
+    }
     
     if ((deviceType == 'ring' || deviceType == 'cam') && context != 'Daily Report') {
     buttonTooltip = [
@@ -262,7 +226,7 @@ function highlightReports (jNode) {
         '<tr><td>Stream Start:</td><td>'+nullConvert(startStream)+'</td><td>Stream End:</td><td>'+nullConvert(endStream)+'</td></tr>',
         '<tr><td>Stream Upgrades:</td><td>'+nullConvert(streamUp)+'</td><td>Stream Downgrades:</td><td>'+nullConvert(streamDown)+'</td></tr>',
         '<tr><td>i2c Error:</td><td>'+nullConvert(i2cValue)+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
-        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td></tr>',
+        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td>'+appError+'</tr>',
         '</table>',
         '</span></a>'
     ];
@@ -273,7 +237,7 @@ function highlightReports (jNode) {
         '<tr><td>RSSI:</td><td>'+nullConvert(rssiValue)+'</td><td>Battery:</td><td>'+nullConvert(batteryValue)+'</td></tr>',
         '<tr><td>MSP Error:</td><td>'+nullConvert(mspValue)+'</td><td>IR Cut Filter:</td><td>'+nullConvert(IRCutFilterOn)+'</td></tr>',
         '<tr><td>i2c Error:</td><td>'+nullConvert(i2cValue)+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
-        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td></tr>',
+        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td>'+appError+'</tr>',
         '</table>',
         '</span></a>'
     ]; 
@@ -286,7 +250,7 @@ function highlightReports (jNode) {
         API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
         SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').html(),
         first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
-     */       
+     */       /*
     if ((context === 'After Ding' || context === 'After Motion') && deviceType == 'ring') {
         
         buttonTooltip.push('&nbsp;<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-tachometer"></i><span>');
@@ -1245,7 +1209,7 @@ function APERender() {
             var link = $('[data-title="\'Spree link\'"]').html();
             link = link.trim().replace('https://', '');
             console.log(link);
-            $('[data-title="\'Spree link\'"]').html(link);*/
+            $('[data-title="\'Spree link\'"]').html(link);*//*
             pingSpree = 0;
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0 && window.location.href.indexOf("chimes") == -1) {
@@ -1262,14 +1226,14 @@ function APERender() {
                                     '<li><a id="TemperatureBatteryReport">Generate Temperature & Battery Report</a></li>',
                                 '</ul>',
                             '</li>',
-                            //'<li class="dropdown-submenu">',
-                            //'<a tabindex="-1" href="#">Timelines</a>',
-                                //'<ul class="dropdown-menu">',
-                                    //'<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
-                                    //'<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
-                                    //'<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
-                                //'</ul>',
-                            //'</li>',
+                            '<li class="dropdown-submenu">',
+                            '<a tabindex="-1" href="#">Timelines</a>',
+                                '<ul class="dropdown-menu">',
+                                    '<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
+                                    '<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
+                                    '<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
+                                '</ul>',
+                            '</li>',
                             '<li><a id="APEDumpMenuToggle">Toggle Dump Menu</a></li>',
                               '<li role="separator" class="divider"></li>',
                             '<li><a id="APESummaryToggle">Switch to Default</a></li>',
@@ -1317,4 +1281,4 @@ function APERender() {
         }
     }, 1000);
 }
-
+*/
