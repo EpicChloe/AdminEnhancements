@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Admin Enhancements
 // @namespace    admin
-// @version      0.9.9
+// @version      0.9.911
 // @description  Chris's Admin Enhancements
 // @author       Chris Pittelko
 // @match        https://admin.ring.com/*
@@ -15,6 +15,8 @@
 // ==/UserScript==
 
 /* Change Log
+v0.9.911
+Enabled Reports
 v0.9.9
 Global disable
 v0.9.5
@@ -33,12 +35,6 @@ Server settings section is now hidden on load
 For full change log, please see: https://raw.githubusercontent.com/EpicChloe/AdminEnhancements/master/README.md
 */
 
-// Color Guide:
-// Red: MSP430 Error
-// Orange: Low Battery (<15%)
-// Blue: OTA/Setup
-// Yellow: RSSI < -70
-/*
 // Add reverse to JQuery
 $.fn.reverse = [].reverse;
 
@@ -82,7 +78,6 @@ GM_addStyle('#APEInstallRequest label {font-size: 12px;}');
 GM_addStyle('#APEInstallRequestToggle {float:right;}');
 
 /* Icon pulse */
-/*
 GM_addStyle('.fa-pulse {display: inline-block;-moz-animation: pulse 2s infinite linear;-o-animation: pulse 2s infinite linear;-webkit-animation: pulse 2s infinite linear;animation: pulse 2s infinite linear;}');
 GM_addStyle('@-webkit-keyframes pulse {0% { opacity: 1; }50% { opacity: 0; }100% { opacity: 1; }}');
 GM_addStyle('@-moz-keyframes pulse {0% { opacity: 1; }50% { opacity: 0; }100% { opacity: 1; }}');
@@ -98,213 +93,7 @@ GM_addStyle('.dropdown-submenu>a:after{display:block;content:" ";float:right;wid
 GM_addStyle('.dropdown-submenu:hover>a:after{border-left-color:#ffffff;}');
 GM_addStyle('.dropdown-submenu.pull-left{float:none;}.dropdown-submenu.pull-left>.dropdown-menu{left:-100%;margin-left:10px;-webkit-border-radius:6px 0 6px 6px;-moz-border-radius:6px 0 6px 6px;border-radius:6px 0 6px 6px;}');
 
-// Updates Report Listing when updated through AJAX calls.
-function highlightReports (jNode) {
 
-    var rssiValue = jNode.find('.key.ng-binding:contains("rssi")').parent().find(':nth-child(2)').html(),
-        batteryValue = jNode.find('.key.ng-binding:contains("battery_percentage")').parent().find(':nth-child(2)').html(),
-        mspValue = jNode.find('.key.ng-binding:contains("msp430_error")').parent().find(':nth-child(2)').html(),
-        i2cValue = jNode.find('.key.ng-binding:contains("i2c_errors")').parent().find(':nth-child(2)').html(),
-        IRCutFilterIR = jNode.find('.key.ng-binding:contains("light_ir")').parent().find(':nth-child(2)').html(),
-        IRCutFilterVis = jNode.find('.key.ng-binding:contains("light_vis")').parent().find(':nth-child(2)').html(),
-        IRCutFilterOn,
-        startStream = jNode.find('.key.ng-binding:contains("start_stream_profile")').parent().find(':nth-child(2)').html(),
-        endStream = jNode.find('.key.ng-binding:contains("end_stream_profile")').parent().find(':nth-child(2)').html(),
-        streamUp = jNode.find('.key.ng-binding:contains("num_stream_upgrades")').parent().find(':nth-child(2)').html(),
-        streamDown = jNode.find('.key.ng-binding:contains("num_stream_downgrades")').parent().find(':nth-child(2)').html(),
-        appErrors = jNode.find('.key.ng-binding:contains("app_errors")').parent().find(':nth-child(2)').html(),
-        buttonTooltip,
-        context = jNode.find('.context').text().trim(),
-        motionZone = '',
-        wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').text().trim(),
-        L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').text().trim(),
-        DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').text().trim(),
-        API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').text().trim(),
-        SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').text().trim(),
-        first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').text().trim(),
-        connectData = [],
-        ac_power = jNode.find('.key.ng-binding:contains("ac_power")').parent().find(':nth-child(2)').html(),
-        JSONData = [],
-        deviceType = '',
-        temp = jNode.find('.key.ng-binding').filter(function() {return $(this).text() === "temp";}).parent().find(':nth-child(2)').html();
-        
-    // Delete Hardware Version From Report
-    var deviceType;
-    
-    if(window.location.href.indexOf("doorbell") > -1) {
-       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Lpd v1') { deviceType = 'ringPro'; }
-       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell' || $('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') { deviceType = 'ring'; }
-       if($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbot') { deviceType = 'doorbot'; }
-    }
-    
-    if(window.location.href.indexOf("cam") > -1) {
-        deviceType = 'cam';
-    }
-    
-    if(window.location.href.indexOf("chime") > -1) {
-       deviceType = 'chime';
-    }
-    
-    
-    if(deviceType == 'ring') {
-        jNode.find('.key.ng-binding:contains("hw")').parent().remove();
-        jNode.find('.key.ng-binding:contains("app")').parent().removeClass('ng-hide');
-    }
-    
-    
-    if(deviceType == 'ringPro') {
-        batteryValue = jNode.find('.key.ng-binding:contains("battery_voltage")').parent().find(':nth-child(2)').html();
-    }
-    
-    if(deviceType == 'cam') {
-       batteryValue = jNode.find('.key.ng-binding:contains("batt_percent")').parent().find(':nth-child(2)').html();
-    }
-
-    
-    jNode.find('[popover-template="\'summaryTemplate.html\'"]').addClass('hidden defaultSummaryButton');
-    
-    if (context === 'After Motion' && deviceType == 'ring') {
-        motionZone = jNode.find('.key.ng-binding:contains("motionDetZone")').parent().find(':nth-child(2)').html();
-        jNode.find('.context').text(context + ' (' + motionZone + ')');
-    }
-    
-    if ( ac_power == 0 && deviceType == 'ring') {
-        jNode.find('td.status_date').html('<i class="fa fa-battery-three-quarters"></i>&nbsp;&nbsp;' + jNode.find('td.status_date').html());
-    }
-    
-    if ( ac_power == 1 && deviceType == 'ring') {
-        jNode.find('td.status_date').html('<i class="fa fa-plug"></i>&nbsp;&nbsp;' + jNode.find('td.status_date').html());
-    }
-    
-    if ( jNode.parents('div#reports_resume').length ) {
-                             
-        jNode.removeAttr('style');
-    
-        if (rssiValue <= -70 && rssiValue != null) {
-            jNode.css("background-color", "#fcf8e3");
-        }
-    
-        if (batteryValue <= 15 && batteryValue != null && (deviceType == 'ring' || deviceType == 'cam')) {
-            jNode.css("background-color", "#ffc370");
-        }
-        
-        if (batteryValue <= 3900 && batteryValue != null && deviceType == 'ringPro') {
-            jNode.css("background-color", "#ffc370");
-        }
-    
-        jNode.find('.context.ng-binding:contains("After OTA")').parent().css("background-color", "#d9edf7");
-    
-        jNode.find('.context.ng-binding:contains("After Setup")').parent().css("background-color", "#d9edf7");
-    
-        if (mspValue != 0 && mspValue != null) {
-            jNode.css("background-color", "#f2dede");
-        }
-    }
-    
-    if (IRCutFilterIR + IRCutFilterVis <= 12 && (deviceType == 'ring' || deviceType == 'cam')) {
-        IRCutFilterOn = "On";
-    } else {
-        IRCutFilterOn = "Off";
-    }
-    
-    if (deviceType == 'cam' && i2cValue == '4') {
-        i2cValue = 0;
-    }
-        
-    if ($('.doorbotKMID > div:nth-child(2) > p').text() == 'Doorbell v3') {
-        var appError = '<td>App Errors:</td><td>'+appErrors+'</td>'
-    } else {
-        var appError = '';
-    }
-    
-    if ((deviceType == 'ring' || deviceType == 'cam') && context != 'Daily Report') {
-    buttonTooltip = [
-        '&nbsp;<a class="btn btn-xs btn-ape APESummaryButton">Summary<span>',
-        '<table class="table table-bordered APETable">',
-        '<tr><td>RSSI:</td><td>'+nullConvert(rssiValue)+'</td><td>Battery:</td><td>'+nullConvert(batteryValue)+'</td></tr>',
-        '<tr><td>MSP Error:</td><td>'+nullConvert(mspValue)+'</td><td>IR Cut Filter:</td><td>'+nullConvert(IRCutFilterOn)+'</td></tr>',
-        '<tr><td>Stream Start:</td><td>'+nullConvert(startStream)+'</td><td>Stream End:</td><td>'+nullConvert(endStream)+'</td></tr>',
-        '<tr><td>Stream Upgrades:</td><td>'+nullConvert(streamUp)+'</td><td>Stream Downgrades:</td><td>'+nullConvert(streamDown)+'</td></tr>',
-        '<tr><td>i2c Error:</td><td>'+nullConvert(i2cValue)+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
-        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td>'+appError+'</tr>',
-        '</table>',
-        '</span></a>'
-    ];
-    } else {
-       buttonTooltip = [
-        '&nbsp;<a class="btn btn-xs btn-ape APESummaryButton">Summary<span>',
-        '<table class="table table-bordered APETable">',
-        '<tr><td>RSSI:</td><td>'+nullConvert(rssiValue)+'</td><td>Battery:</td><td>'+nullConvert(batteryValue)+'</td></tr>',
-        '<tr><td>MSP Error:</td><td>'+nullConvert(mspValue)+'</td><td>IR Cut Filter:</td><td>'+nullConvert(IRCutFilterOn)+'</td></tr>',
-        '<tr><td>i2c Error:</td><td>'+nullConvert(i2cValue)+'</td><td>i2c Issue:</td><td>'+converti2cValueToString(i2cValue)+'</td></tr>',
-        '<tr><td>Temperature:</td><td>'+nullConvert(temp)+'</td>'+appError+'</tr>',
-        '</table>',
-        '</span></a>'
-    ]; 
-    }
-    
-    /*
-        wake_up = jNode.find('.key.ng-binding:contains("wake_up_time")').parent().find(':nth-child(2)').html(),
-        L3 = jNode.find('.key.ng-binding:contains("l3_connect_time")').parent().find(':nth-child(2)').html(),
-        DNS_lookup = jNode.find('.key.ng-binding:contains("ding_dns_lookup_time")').parent().find(':nth-child(2)').html(),
-        API_response = jNode.find('.key.ng-binding:contains("ding_api_response_time")').parent().find(':nth-child(2)').html(),
-        SIP_accept = jNode.find('.key.ng-binding:contains("sip_accepted_time")').parent().find(':nth-child(2)').html(),
-        first_audio = jNode.find('.key.ng-binding:contains("first_audio_time")').parent().find(':nth-child(2)').html(),
-     */       /*
-    if ((context === 'After Ding' || context === 'After Motion') && deviceType == 'ring') {
-        
-        buttonTooltip.push('&nbsp;<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-tachometer"></i><span>');
-        buttonTooltip.push('<table class="table table-bordered APETable">');
-        buttonTooltip.push('<tr><td>Wake Up:</td><td>'+wake_up+'</td></tr>');
-        buttonTooltip.push('<tr><td>L3</td><td>'+L3+'</td><td>Time</td><td>'+timestampDifference(L3, wake_up, false, true)+'</td></tr>');
-        buttonTooltip.push('<tr><td>DNS Lookup</td><td>'+DNS_lookup+'</td><td>Time</td><td>'+timestampDifference(DNS_lookup, wake_up, false, true)+'</td></tr>');
-        buttonTooltip.push('<tr><td>API Response</td><td>'+API_response+'</td><td>Time</td><td>'+timestampDifference(API_response, wake_up, false, true)+'</td></tr>');
-        //buttonTooltip.push('<tr><td>SIP Accept</td><td>'+SIP_accept+'</td><td>Time</td><td>'+timestampDifference(SIP_accept, wake_up, false, true)+'</td></tr>');
-        buttonTooltip.push('<tr><td>First Audio</td><td>'+first_audio+'</td><td>Time</td><td>'+timestampDifference(first_audio, wake_up, false, true)+'</td></tr>');
-        buttonTooltip.push('</table>');
-        buttonTooltip.push('</span></a>');
-        
-        
-        connectData.push({x: wake_up, y: timestampDifference(L3, wake_up, false, true), group: 0});
-        connectData.push({x: wake_up, y: timestampDifference(DNS_lookup, wake_up, false, true), group: 1});
-        connectData.push({x: wake_up, y: timestampDifference(API_response, wake_up, false, true), group: 2});
-        //connectData.push({x: wake_up, y: timestampDifference(SIP_accept, wake_up, false, true), group: 3});
-        connectData.push({x: wake_up, y: timestampDifference(first_audio, wake_up, false, true), group: 4});
-    
-        JSONData.push({'connectData': connectData});
-    }
-    
-    if (i2cValue != 0 && i2cValue != null && i2cValue != 4) {
-        buttonTooltip.push('&nbsp<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-warning fa-pulse"></i><span class="APETable">');
-        buttonTooltip.push('&nbspi2C Error Detected with '+converti2cValueToString(i2cValue)+'.&nbsp');
-        buttonTooltip.push('</span></a>');
-    }
-    
-    if( nullConvert(temp).match(/[f]+/) == null && nullConvert(temp) !== '---') {
-        var tempConverted = ((temp - 273.15)*9/5)+32;
-    } else {
-        var tempConverted = nullConvert(temp).replace(/\(.*?\)/, '').replace(' F ', '');
-    }
-    
-    if (tempConverted !== '---' && (tempConverted > 135 || tempConverted < 37) && tempConverted < 500) {
-        buttonTooltip.push('&nbsp<a class="btn btn-xs btn-ape APESummaryButton"><i class="fa fa-cloud"></i><span class="APETable">');
-        buttonTooltip.push('&nbspTempature Warning: '+tempConverted+'F&nbsp');
-        buttonTooltip.push('</span></a>');
-    }
-    
-    // 37 - Performance
-    // 32 - Battery stops charging
-    // 23 - Derps
-    
-    buttonTooltip.push('<APEData>' + JSON.stringify(JSONData) + '</APEData>');
-    
-    if (deviceType === 'ring' || deviceType === 'cam' || deviceType === 'ringPro') {
-        jNode.find('td.status_date').append(buttonTooltip.join(''));
-    }
-
-    $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check text-success');
-
-};
 
 function dumpSummaryReports() {
 
@@ -349,95 +138,6 @@ function toggleDumpMenu() {
     $('#APEDumpModal').toggleClass('hidden');
 }
 
-function labelSnooze() {
-    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div > div:nth-child(3) > input').val(); }
-    var label = '';
-    if (snoozeVal == '0,0,0') {
-            label = "Frequent";
-    } else if (snoozeVal == '1,5,15') {
-            label = "Standard";
-    } else if (snoozeVal == '2,10,30') {
-            label = "Light";
-    } else {
-            label = "Custom";
-    }
-    if(deviceType() == 'ring') {var snoozeVal = $('#settings > div:nth-child(3) > div > div > div:nth-child(3) > h5').append(' - <strong>' + label + '<strong>') }
-
-}
-
-// Converts null values to '---' for display
-function nullConvert(value) {
-    return (value == null) ? '---' : value;
-}
-
-// Converts 1c2_error value to a String
-function converti2cValueToString(value) {
-    var returnValue = [];
-    if (value >= 16) {
-        value = value - 16;
-        returnValue.push("PIR");
-    }
-    if (value >= 8) {
-        value = value - 8;
-        returnValue.push("IR Filter");
-    }
-    if (value >= 4) {
-        value = value - 4;
-        returnValue.push("Weather Station");
-    }
-    if (value >= 2) {
-        value = value - 2;
-        returnValue.push("Fuel Gauge");
-    }
-    if (value >= 1) {
-        value = value - 1;
-        returnValue.push("LED Issue");
-    }
-    if (value > 1) {
-        console.log("i2c Conversion Error");
-    }
-    
-    if (returnValue.length > 1) {
-        return returnValue.join(", ");
-    } else if (returnValue.length == 1) {
-        return returnValue.join("");
-    } else {
-        return "None";
-    }  
-        
-};
-
-// Converts color swatches to symbols for color blind help
-function colorBlindHelper () {
-    var eventSuccessColorSwatch = $('span.ng-scope.yipee'),
-        eventFailColorSwatch = $('span.ng-scope.ouch'),
-        setupSucessColorSwatch = $('span.yipee'),
-        setupFailColorSwatch = $('span.ouch');
-    
-    //eventSuccessColorSwatch.html('<span><i class="fa fa-check"></i></span>');
-    eventSuccessColorSwatch.parent().find(':nth-child(2)').addClass('pull-right');
-    
-    //eventFailColorSwatch.html('<span><i class="fa fa-times"></i></span>');
-    eventFailColorSwatch.parent().find(':nth-child(2)').addClass('pull-right');
-    
-    setupSucessColorSwatch.html('<span><i class="fa fa-check APESymbolHelper"></i></span>');
-    setupSucessColorSwatch.parent().find(':nth-child(2)').css('padding-left', '20px');
-    
-    setupFailColorSwatch.html('<span><i class="fa fa-times APESymbolHelper"></i></span>');
-    setupFailColorSwatch.parent().find(':nth-child(2)').css('padding-left', '20px');
-}
-
-function toggleSummaryButtons() {
-    $('[popover-template="\'summaryTemplate.html\'"]').toggleClass('hidden');
-    $('.APESummaryButton').toggleClass('hidden');
-    $('.defaultReportButtons').toggleClass('hidden');
-    $('#ReportButton').toggleClass('hidden');
-}
-
-function toggleLegend() {
-    $('#APEColorLegend').toggleClass('hidden');
-}
-
 function deviceType() {
     var deviceType;
     
@@ -457,223 +157,6 @@ function deviceType() {
     
     return deviceType;
 }
-
-// Adds Report Listings to AJAX watch list
-waitForKeyElements ("tr.ng-scope", highlightReports);
-
-// Returns difference in timestamps
-function timestampDifference(now, then, mil, short) {
-    
-    //var now  = "11/10/2015 01:42:08:353";
-    //var then = "11/09/2015 01:42:41:352";
-
-    var ms = moment(now).diff(moment(then));
-    var d = moment.duration(ms);
-    if (mil) {
-        var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss:SSS");
-    } else if (short) {
-        var s = moment.utc(ms).format("ss.SSS");
-    } else {
-        var s = Math.floor(d.asHours()) + moment.utc(ms).format(":mm:ss");
-    }
-    
-    return s;
-    
-}
-
-// Builds Startup Timeline (visjs)
-function buildTimelineStartup() {
-    
-    var data = [];
-    
-    $( "APEData" ).each( function( index, element ){
-        
-        var _data = {};
-        
-        _data = JSON.parse( $( this ).text() );
-        
-        if (_data[0] == null) {
-            
-        } else { 
-            
-            $.each(_data[0]['connectData'], function (index, value) {
-                
-                data.push(value);
-                
-            });
-            
-        }
-        
-    });
-    
-    console.log(data);
-    
-    // Clear contents of DOM element
-    $('#APEcontainer').html('');
-    $('#APEcontainer').html('<h3>Timeline (Start Up)</h3>');
-    
-    // DOM element where the Timeline will be attached
-    var container = document.getElementById('APEcontainer');
-    
-    var groups = new vis.DataSet(); 
-    
-    groups.add({id: 0, content: "L3"});
-    groups.add({id: 1, content: "DNS_lookup"});
-    groups.add({id: 2, content: "API_response"});
-    groups.add({id: 3, content: "SIP_accept"});
-    groups.add({id: 4, content: "first_audio"});
-    
-    var dataset = new vis.DataSet(data);
-    
-    var options = {
-        style:'bar',
-        stack:true,
-        barChart: {width:50, align:'center'}, // align: left, center, right
-        drawPoints: false,
-        dataAxis: {
-            icons:true
-        },
-        legend: true,
-        orientation:'top'
-    };
-    var graph2d = new vis.Graph2d(container, data, groups, options);
-    
-}
-
-// Builds Time Line using visjs
-function buildTimeline() {
-    
-    // Assign Initial Variables
-    var dataArray = [],
-        lastValue,
-        content;
-    
-    // Clear contents of DOM element
-    $('#APEcontainer').html('');
-    $('#APEcontainer').html('<h3>Timeline (Time Since Last Event)</h3>');
-     
-    // DOM element where the Timeline will be attached
-    var container = document.getElementById('APEcontainer');
-    
-    var timeData = $('td.status .key.ng-binding:contains("time")').parent(),
-                    timeReport,
-                    timeValue,
-                    data = [];
-    for (var key in timeData) {
-        if (timeData.hasOwnProperty(key)) {
-            timeReport = timeData.eq(key);
-            timeValue = timeReport.find(':nth-child(2)').html();
-            if (timeValue != null) {
-                data.unshift(timeValue);
-            }
-        }
-    }
-    
-    // Convert and sort by UNIX timestamp
-    data.sort(function(a,b){
-        return moment(a).unix() - moment(b).unix();
-    });
-    
-    // Keeping data sorted by handling data push in order
-    for (var i = 0; i < data.length; i++) { 
-        // Assigns data label as oldest or time difference
-        if(i!=0){content = timestampDifference(data[i], lastValue, false, false);}else{content='oldest'}
-        // Pushes data index to new ojbject
-        dataArray.push({
-            id: i,
-            start: data[i],
-            content: content
-        });
-        // Assign last timestamp for next call
-        lastValue = data[i];
-    }
-    
-    // Create timeline data set from 
-    var timelineData = new vis.DataSet(dataArray);
-
-    // Configuration for the Timeline
-    var options = {};
-
-    // Create a Timeline
-    var timeline = new vis.Timeline(container, timelineData, options);
-
-}
-
-// Builds Battery Timeline
-
-function buildTimelineBattery() {
-        
-    $('#APEcontainer').html('');
-    $('#APEcontainer').html('<h3>Timeline (Battery)</h3>');
-    
-    
-    var batterySet;
-    
-    if(deviceType() == 'ringPro') {
-        batterySet = $('.key.ng-binding:contains("battery_voltage")').parent();
-    } else if(deviceType() == 'cam') {
-       batterySet = $('.key.ng-binding:contains("batt_percent")').parent();
-    } else {
-       batterySet = $('.key.ng-binding:contains("battery_percentage")').parent();
-    }
-    
-    
-   var container = document.getElementById('APEcontainer');
-  var batteryData = batterySet,
-                    batteryReport,
-                    batteryValue,
-                    timeData = $('td.status .key.ng-binding:contains("time")').parent(),
-                    timeReport,
-                    timeValue,
-                    data = [];
-                for (var key in batteryData) {
-                    if (batteryData.hasOwnProperty(key)) {
-                        batteryReport = batteryData.eq(key);
-                        batteryValue = batteryReport.find(':nth-child(2)').html();
-                        
-                        timeReport = timeData.eq(key);
-                        timeValue = timeReport.find(':nth-child(2)').html();
-                        if (timeValue != null) {
-                            data.unshift([timeValue, parseInt(batteryValue)]);
-                        }
-                        
-                    }
-                }
-                
-                data.sort(function(a,b){
-                    return moment(a[0]).unix() - moment(b[0]).unix();
-                });
-    var dataArray = [];
-    
-    // Keeping data sorted by handling data push in order
-    for (var i = 0; i < data.length; i++) { 
-        // Pushes data index to new ojbject
-        dataArray.push({
-            x: data[i][0],
-            y: data[i][1],
-            label: {
-                content: data[i][1]
-            }
-        });
-        // Assign last timestamp for next call
-    }
-
-  var dataset = new vis.DataSet(dataArray);
-  var options = {
-    drawPoints: {
-        size: 4,
-        style: 'circle'
-    },
-    interpolation: {
-        enabled: false
-    }
-  };
-  var graph2d = new vis.Graph2d(container, dataset, options);
-            
-
-                
-
-};
 
 // Builds Battery Chart using High Charts Library
 function buildBatteryReport() {
@@ -1137,7 +620,7 @@ function buildTemperatureBatteryReport () {
 // Registers first run of the APE Renderer
 $(document).ready(function() {
     APERender();
-    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-code" aria-hidden="true"></i></i></button></li>');
+    $('.topnav').find('.nav-horizontal').prepend('<li class="nav-parent" id="APEStatus-parent"><button type="button" class="btn navbar-btn" id="APEStatus"><i class="fa fa-puzzle-piece" aria-hidden="true"></i></i></button></li>');
                 $('#APEStatus').on('click', function() {
                     $('#APEInformationModal').toggleClass('hidden');
                 });
@@ -1146,20 +629,15 @@ $(document).ready(function() {
                 '<div class="APEModal hidden" id="APEInformationModal">',
                 '<h3 class="page-header">Ring Admin Panel Enhancements</h3>',
                 '<dl class="dl-horizontal">',
-                '<dt>Version 0.9.*</dt>',
+                '<dt>Version 0.9.911</dt>',
                 '<dd>',
                 '<ul>',
-                     '<strong></strong>',
-                     '<li>Fixed QA Dump</li>',
-                     '<li>Fixed device detection</li>',
-                     '<li>Fixed startup time</li>',
-                     '<li>Added V3 support</li>',
-                     '<li>Fixed Snooze Profile Label</li>',
-                     '<li>Fixed Battery Charts</li>',
+                     '<strong>Quick! What\'s the number to 911?</strong>',
+                     '<li>Added graphs back until they get fixed</li>',
                 '</ul>',
                 '</dd>',
                 '<dt>Version</dt>',
-                '<dd>v0.9.32</dd>',
+                '<dd>v0.9.911</dd>',
                 '<dt>By</dt>',
                 '<dd>Chris Pittelko - chris@ring.com</dd>',
                 '<dt>Link</dt>',
@@ -1209,7 +687,7 @@ function APERender() {
             var link = $('[data-title="\'Spree link\'"]').html();
             link = link.trim().replace('https://', '');
             console.log(link);
-            $('[data-title="\'Spree link\'"]').html(link);*//*
+            $('[data-title="\'Spree link\'"]').html(link);*/
             pingSpree = 0;
         }
         if ($('#reports_resume').length && pingReports && $('#APEcontainer').length == 0 && window.location.href.indexOf("chimes") == -1) {
@@ -1226,14 +704,14 @@ function APERender() {
                                     '<li><a id="TemperatureBatteryReport">Generate Temperature & Battery Report</a></li>',
                                 '</ul>',
                             '</li>',
-                            '<li class="dropdown-submenu">',
+                            /*'<li class="dropdown-submenu">',
                             '<a tabindex="-1" href="#">Timelines</a>',
                                 '<ul class="dropdown-menu">',
                                     '<li><a id="APETimeline">Generate Last Update Timeline</a></li>',
                                     '<li><a id="APETimelineBattery">Generate Battery Timeline</a></li>',
                                     '<li><a id="APETimelineStartup">Generate Start Up Timeline</a></li>',
                                 '</ul>',
-                            '</li>',
+                            '</li>',*/
                             '<li><a id="APEDumpMenuToggle">Toggle Dump Menu</a></li>',
                               '<li role="separator" class="divider"></li>',
                             '<li><a id="APESummaryToggle">Switch to Default</a></li>',
@@ -1250,25 +728,25 @@ function APERender() {
             $('#APETimelineBattery').on( 'click', buildTimelineBattery );
             $('#APETimelineStartup').on( 'click', buildTimelineStartup );
             // Add report button toggle
-            $('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
+            //$('#APESummaryToggle').on ( 'click', toggleSummaryButtons );
             $('#APEDumpButton').on ( 'click', dumpSummaryReports );
             $('#APEDumpMenuToggle').on ( 'click', toggleDumpMenu );
             // Remove app data from being shown by default, making the reports summary multi-line
-            $('#reports_resume > div > div.eventslist > table > tbody > tr > td.fw_versions > ul > li:nth-child(2)').addClass('ng-hide');
+            //$('#reports_resume > div > div.eventslist > table > tbody > tr > td.fw_versions > ul > li:nth-child(2)').addClass('ng-hide');
             // Remove buttons for broken reports
-            $('#reports_resume').find("div:nth-child(5)").addClass('hidden defaultReportButtons');
+            //$('#reports_resume').find("div:nth-child(5)").addClass('hidden defaultReportButtons');
             // New button location
-            $('#reports_resume > div > div.panel-heading > div > div:nth-child(1)').addClass('hidden defaultReportButtons');
+            //$('#reports_resume > div > div.panel-heading > div > div:nth-child(1)').addClass('hidden defaultReportButtons');
             // colorBlindHelper(); - Unable to hook due to base implementation. Base implementation is broken. All events fail ng-class logic check
-            $('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
+            //$('[tooltip="completed"]').attr("ng-class","").removeClass('fa-times text-danger').addClass('fa-check  text-success');
             //$('#reports_resume').find('.btn-group .ng-scope').parent().parent().clone(true, true).appendTo('#APEcontainer');
-            $('#reports_resume th:first').css('width', '26px').html('<button id="reports_resume_legend"><i class="fa fa-info-circle fa-align-center"></i></button>').parent().parent().parent().parent().prepend('<div id="APEColorLegend" class="hidden">&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#f2dede;"></i>&nbsp;MSP430 Error&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#ffc370;"></i>&nbsp;Low Battery(<15%)&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#d9edf7;"></i>&nbsp;OTA/Setup&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#fcf8e3;"></i>&nbsp;RSSI <70</div>');
-            $('#reports_resume_legend').on ( 'click', toggleLegend );
+            //$('#reports_resume th:first').css('width', '26px').html('<button id="reports_resume_legend"><i class="fa fa-info-circle fa-align-center"></i></button>').parent().parent().parent().parent().prepend('<div id="APEColorLegend" class="hidden">&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#f2dede;"></i>&nbsp;MSP430 Error&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#ffc370;"></i>&nbsp;Low Battery(<15%)&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#d9edf7;"></i>&nbsp;OTA/Setup&nbsp;<i class="fa fa-square APEColorSwatch" style="color:#fcf8e3;"></i>&nbsp;RSSI <70</div>');
+            //$('#reports_resume_legend').on ( 'click', toggleLegend );
             // QoL Changes
             $('.doorbotdetails h5').css('font-weight', '700');
-            var coordinates = $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').text().replace(' | ' , ',');
-            $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
-            $('.APELocationGoButton').on ( 'click' , function() { window.open('https://www.google.com/search?q='+coordinates); } );
+            //var coordinates = $('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').text().replace(' | ' , ',');
+            //$('div.col-md-4.cf.coldetails.doorbotLocation > div:nth-child(2) > div:nth-child(6) > div > div.pull-right.ng-binding').parent().parent().append('<a class="btn btn-ape APELocationGoButton">Go <i class="fa fa-angle-double-right"></i></a>');
+            //$('.APELocationGoButton').on ( 'click' , function() { window.open('https://www.google.com/search?q='+coordinates); } );
             $('#reports_resume > div > div.panel-heading > div').removeAttr('style');
             pingReports = 0;
             setTimeout(function() {
@@ -1281,4 +759,4 @@ function APERender() {
         }
     }, 1000);
 }
-*/
+
